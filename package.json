@@ -1,0 +1,7 @@
+{
+  "name": "cwn-character-creator",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cities Without Number character creation engine",
+  "main": "cwn-engine.js"
+}

@@ -1,0 +1,360 @@
+{
+  "edges": [
+    {
+      "name": "Educated",
+      "description": "Pick a bonus skill of your choice. Whenever you gain skill points from character level advancement, you get a bonus skill point."
+    },
+    {
+      "name": "Face",
+      "description": "Gain Connect as a bonus skill. Once per game week, gain one temporary Acquaintance Contact of your choice. You lose touch with this Contact after you use this Edge again."
+    },
+    {
+      "name": "Focused",
+      "description": "You begin play with an extra Focus pick. You may choose this Edge more than once."
+    },
+    {
+      "name": "Ghost",
+      "description": "Gain Sneak as a bonus skill. Fighting Withdrawal is an On Turn action. Once per scene, reroll a failed Sneak check. Once per day, move 10m as a Move action without being seen."
+    },
+    {
+      "name": "Hacker",
+      "description": "Gain Program as a bonus skill. Start with a Cranial Jack, scrap deck, and 8 program elements. Gain a bonus Main Action each round for hacking/cyberspace mental actions."
+    },
+    {
+      "name": "Hard To Kill",
+      "description": "Roll 1d6+2 for hit points per level instead of 1d6. Base Trauma Target increases by +1 (base becomes 7)."
+    },
+    {
+      "name": "Killing Blow",
+      "description": "Gain a combat skill as a bonus skill. Hit point damage increases by 1 per two character levels (rounded up). Trauma Die rolls gain a +1 bonus."
+    },
+    {
+      "name": "Masterful Expertise",
+      "description": "Once per scene, as an Instant action, reroll a failed check for a non-combat skill."
+    },
+    {
+      "name": "On Target",
+      "description": "Gain a combat skill as a bonus skill. Your basic attack bonus is equal to your character level instead of the usual half level."
+    },
+    {
+      "name": "Operator’s Fortune",
+      "description": "Once per session as an Instant action, roll 1d6 when a bad event happens. 1: Unaffected. 2-5: Avert consequences. 6: Event lands on an enemy/rival instead."
+    },
+    {
+      "name": "Prodigy",
+      "description": "Pick an attribute (not Con); its score becomes 18 (+3 mod). Cannot be taken with the Underdog Rule."
+    },
+    {
+      "name": "Veteran’s Luck",
+      "description": "Once per scene, as an Instant action, treat an attack roll that hit you as a miss, or an attack you made that missed as a hit."
+    },
+    {
+      "name": "Voice of the People",
+      "description": "Gain both levels of the Pop Idol Focus and an additional Friend Contact related to your art."
+    },
+    {
+      "name": "Wired",
+      "description": "Begin play with up to $200,000 worth of cyberware. Installation is free and maintenance is covered for two months."
+    }
+  ],
+  "backgrounds": [
+    {
+      "name": "Bum",
+      "description": "Vagrant, junkie, or street survivor.",
+      "free_skill": "Exert-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Exert", "Any Skill"],
+      "learning": ["Any Combat", "Exert", "Connect", "Sneak", "Notice", "Talk", "Fix", "Know"]
+    },
+    {
+      "name": "Bureaucrat",
+      "description": "City government functionary.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Mental", "+2 Mental", "Talk", "Any Skill"],
+      "learning": ["Connect", "Know", "Talk", "Program", "Exert", "Drive", "Notice", "Any Skill"]
+    },
+    {
+      "name": "Clergy",
+      "description": "Spiritual leader in the slums.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Mental", "+2 Mental", "Connect", "Any Skill"],
+      "learning": ["Exert", "Talk", "Connect", "Know", "Know", "Heal", "Notice", "Any Skill"]
+    },
+    {
+      "name": "Coder",
+      "description": "Corporate or freelance programmer.",
+      "free_skill": "Program-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Mental", "+2 Mental", "Program", "Any Skill"],
+      "learning": ["Program", "Drive", "Fix", "Talk", "Connect", "Know", "Notice", "Any Skill"]
+    },
+    {
+      "name": "Corp Security",
+      "description": "Corporate muscle or ex-security.",
+      "free_skill": "Any Combat-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Physical", "Any Combat", "Any Skill"],
+      "learning": ["Any Combat", "Talk", "Connect", "Notice", "Exert", "Heal", "Sneak", "Know"]
+    },
+    {
+      "name": "Corper",
+      "description": "Former employee of a megacorp.",
+      "free_skill": "Connect-0",
+      "growth": ["+1 Any Stat", "+1 Any Stat", "+2 Physical", "+2 Mental", "Any Skill", "Any Skill"],
+      "learning": ["Know", "Talk", "Connect", "Any Combat", "Notice", "Sneak", "Fix", "Any Skill"]
+    },
+    {
+      "name": "Criminal",
+      "description": "Thief, con man, or enforcer.",
+      "free_skill": "Sneak-0",
+      "growth": ["+1 Any Stat", "+1 Any Stat", "+2 Physical", "+2 Mental", "Sneak", "Any Skill"],
+      "learning": ["Any Combat", "Sneak", "Notice", "Connect", "Talk", "Fix", "Exert", "Drive"]
+    },
+    {
+      "name": "Doctor",
+      "description": "Corporate medic or street doc.",
+      "free_skill": "Heal-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Mental", "+2 Mental", "Heal", "Any Skill"],
+      "learning": ["Heal", "Notice", "Know", "Talk", "Program", "Connect", "Fix", "Any Skill"]
+    },
+    {
+      "name": "Drone Jockey",
+      "description": "Pilot of security or utility drones.",
+      "free_skill": "Drive-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Drive", "Any Skill"],
+      "learning": ["Drive", "Fix", "Shoot", "Notice", "Sneak", "Exert", "Program", "Any Skill"]
+    },
+    {
+      "name": "Ganger",
+      "description": "Rank and file member of a street gang.",
+      "free_skill": "Any Combat-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Any Combat", "Any Skill"],
+      "learning": ["Any Combat", "Connect", "Exert", "Notice", "Sneak", "Talk", "Fix", "Any Skill"]
+    },
+    {
+      "name": "Laborer",
+      "description": "Day laborer or manual worker.",
+      "free_skill": "Exert-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Physical", "Exert", "Any Skill"],
+      "learning": ["Exert", "Drive", "Sneak", "Connect", "Notice", "Fix", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Law Enforcement",
+      "description": "Former beat cop or detective.",
+      "free_skill": "Notice-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Notice", "Any Skill"],
+      "learning": ["Know", "Any Combat", "Notice", "Sneak", "Talk", "Connect", "Heal", "Any Skill"]
+    },
+    {
+      "name": "Manager",
+      "description": "Middle-manager or project lead.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Mental", "+2 Mental", "Talk", "Any Skill"],
+      "learning": ["Know", "Talk", "Drive", "Connect", "Notice", "Exert", "Program", "Any Skill"]
+    },
+    {
+      "name": "Outlander",
+      "description": "Survivor from the wastes beyond the city.",
+      "free_skill": "Exert-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Exert", "Any Skill"],
+      "learning": ["Exert", "Drive", "Fix", "Know", "Sneak", "Connect", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Performer",
+      "description": "Musician, artist, or VR star.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+1 Any Stat", "+2 Mental", "+2 Physical", "Talk", "Any Skill"],
+      "learning": ["Connect", "Know", "Connect", "Talk", "Exert", "Sneak", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Soldier",
+      "description": "Former government or corporate military.",
+      "free_skill": "Any Combat-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Physical", "+2 Physical", "Any Combat", "Any Skill"],
+      "learning": ["Any Combat", "Exert", "Talk", "Notice", "Drive", "Heal", "Know", "Any Skill"]
+    },
+    {
+      "name": "Spy",
+      "description": "Infiltrator or intelligence gatherer.",
+      "free_skill": "Sneak-0",
+      "growth": ["+1 Any Stat", "+1 Any Stat", "+2 Mental", "+2 Physical", "Sneak", "Any Skill"],
+      "learning": ["Sneak", "Notice", "Talk", "Connect", "Program", "Exert", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Trader",
+      "description": "Peddler, hawker, or shopkeeper.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+2 Mental", "+2 Physical", "+2 Physical", "Talk", "Any Skill"],
+      "learning": ["Know", "Notice", "Connect", "Fix", "Talk", "Drive", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Streetwalker",
+      "description": "Professional distraction or companion.",
+      "free_skill": "Talk-0",
+      "growth": ["+1 Any Stat", "+1 Any Stat", "+2 Physical", "+2 Mental", "Talk", "Any Skill"],
+      "learning": ["Talk", "Exert", "Connect", "Know", "Sneak", "Notice", "Heal", "Any Skill"]
+    },
+    {
+      "name": "Technician",
+      "description": "Freelance or corporate repair tech.",
+      "free_skill": "Fix-0",
+      "growth": ["+1 Any Stat", "+2 Physical", "+2 Physical", "+2 Mental", "Fix", "Any Skill"],
+      "learning": ["Fix", "Program", "Exert", "Know", "Notice", "Connect", "Drive", "Any Skill"]
+    }
+  ],
+  "foci": [
+    {
+      "name": "Ace Driver",
+      "description": "Expert vehicle operator.",
+      "level_1": "Gain Drive skill. Acquire $5k in vehicles. Reroll one failed driving/maintenance check per scene.",
+      "level_2": "Gain Fix skill. Vehicle Speed +1. Add one free mod to your vehicles."
+    },
+    {
+      "name": "Alert",
+      "description": "Impossible to surprise.",
+      "level_1": "Gain Notice skill. Cannot be surprised or Execution Attacked. Roll initiative twice.",
+      "level_2": "Always act first in combat unless against another Level 2 Alert character."
+    },
+    {
+      "name": "All Natural",
+      "description": "Gifted body, no cyberware allowed.",
+      "level_1": "Gain any skill. Attribute mod +1. No major injuries. Gains attribute picks at levels 3, 5, 7, 10.",
+      "level_2": "N/A"
+    },
+    {
+      "name": "Armsmaster",
+      "description": "Expert with melee/thrown weapons.",
+      "level_1": "Gain Fight skill. Ready stowed weapons as Instant. Add Fight level to damage/Shock.",
+      "level_2": "Melee Shock treats target as AC 10. +1 to hit with melee/thrown."
+    },
+    {
+      "name": "Assassin",
+      "description": "Professional sudden murderer.",
+      "level_1": "Gain Sneak skill. Conceal small weapons easily. Point-blank surprise attacks cannot miss.",
+      "level_2": "Take a Move action on the same round as an Execution Attack."
+    },
+    {
+      "name": "Authority",
+      "description": "Natural leader.",
+      "level_1": "Gain Talk skill. Once/day make request of NPC (Cha/Talk check vs Morale).",
+      "level_2": "Followers gain Morale/Hit bonuses equal to Talk skill and +1 to all skill checks."
+    },
+    {
+      "name": "Close Combatant",
+      "description": "Skilled in close-quarters brawling.",
+      "level_1": "Gain combat skill. Use pistols in melee without penalty. Ignore melee Shock.",
+      "level_2": "Shock damage treats targets as AC 10. Fighting Withdrawal is an On Turn action."
+    },
+    {
+      "name": "Cyberdoc",
+      "description": "Aptitude for cybernetics.",
+      "level_1": "Gain Fix and Heal. Maintenance reduces System Strain by 1.",
+      "level_2": "Maintenance reduces System Strain by 2. Never fail an installation. Build one free mod per patient."
+    },
+    {
+      "name": "Deadeye",
+      "description": "Gifted with ranged weapons.",
+      "level_1": "Gain Shoot skill. Ready stowed ranged weapon as Instant. Add Shoot level to damage.",
+      "level_2": "Reload as On Turn. No penalty for ranged weapons in melee. Once/scene auto-hit inanimate target."
+    },
+    {
+      "name": "Diplomat",
+      "description": "Expert negotiator.",
+      "level_1": "Gain Talk skill. Learn languages in a week. Reroll 1s on negotiation/diplomacy checks.",
+      "level_2": "Once/session shift NPC reaction one step toward friendly if you talk for 30s."
+    },
+    {
+      "name": "Drone Pilot",
+      "description": "Expert drone operator.",
+      "level_1": "Gain Drive and Fix. Receive free drone budget. Repair drones without spare parts.",
+      "level_2": "Assume Command is an On Turn action. Bonus Main Action for drones once/scene. Controlled drones +2 to hit."
+    },
+    {
+      "name": "Expert Programmer",
+      "description": "High-end hacker.",
+      "level_1": "Gain Program skill. Maintain extra programs (Level+2). Once/day edit a program on-the-fly.",
+      "level_2": "Programs take half memory. Cyberdeck gains CPU bonus equal to Program skill."
+    },
+    {
+      "name": "Healer",
+      "description": "Expert combat medic.",
+      "level_1": "Gain Heal skill. Stabilize adjacent person as On Turn. Roll 3d6 for Heal (drop lowest).",
+      "level_2": "Healing devices heal twice as much. Heal group 1d6+Heal HP with 10 mins first aid (once/day)."
+    },
+    {
+      "name": "Henchkeeper",
+      "description": "Recruiter of loyal subordinates.",
+      "level_1": "Gain Talk skill. Acquire henchmen within 24 hours. (1 per 3 levels).",
+      "level_2": "Henchmen are remarkably loyal (Basic Corp Security stats)."
+    },
+    {
+      "name": "Many Faces",
+      "description": "Multiple authentic identities.",
+      "level_1": "Gain Sneak skill. Maintain one alternate identity per 3 character levels.",
+      "level_2": "N/A"
+    },
+    {
+      "name": "Pop Idol",
+      "description": "Famous with a devoted following.",
+      "level_1": "Gain Talk skill. Mobilize 100 fans once/week. Earn $1,000 per level from fans.",
+      "level_2": "Mobilize 100 fans per level. Donation earnings double. Charisma mod +1 (max +2)."
+    },
+    {
+      "name": "Roamer",
+      "description": "World-traveler and survivor.",
+      "level_1": "Gain Exert and Drive. Conversational in all local languages. Acquire free vehicle budget.",
+      "level_2": "Once/scene reroll a failed travel/vehicle operation skill check."
+    },
+    {
+      "name": "Safe Haven",
+      "description": "Expert at finding secret bolt holes.",
+      "level_1": "Gain Sneak skill. Find/arrange a secure safehouse in any neighborhood (1 week).",
+      "level_2": "Safehouses are protected by local authorities and contain tech workshops/clinics."
+    },
+    {
+      "name": "Shocking Assault",
+      "description": "Ferocious melee attacker.",
+      "level_1": "Gain Fight skill. Shock damage treats all targets as AC 10.",
+      "level_2": "Gain a +2 bonus to Shock damage rating."
+    },
+    {
+      "name": "Sniper’s Eye",
+      "description": "Expert at Execution Attacks.",
+      "level_1": "Gain Shoot skill. Roll 3d6 (drop lowest) for ranged Execution Attacks.",
+      "level_2": "Never miss ranged Execution Attacks. Target takes -4 to save and double damage."
+    },
+    {
+      "name": "Specialist",
+      "description": "Superlative skill in one area.",
+      "level_1": "Gain a non-combat skill. Roll 3d6 (drop lowest) for all checks with it.",
+      "level_2": "Roll 4d6 (drop two lowest) for all checks with that skill."
+    },
+    {
+      "name": "Tinker",
+      "description": "Talent for modifying gear.",
+      "level_1": "Gain Fix skill. Maintenance score doubled. Gear mods cost half price.",
+      "level_2": "Fix skill treated as one level higher for mods. Advanced mods require fewer components."
+    },
+    {
+      "name": "Unarmed Combatant",
+      "description": "Hands more dangerous than knives.",
+      "level_1": "Gain Fight skill. Unarmed damage scales with skill level (up to 1d12+1). Gain Shock quality.",
+      "level_2": "Deal 1d6 damage even on a miss. Trauma Die for lethal attacks becomes 1d8."
+    },
+    {
+      "name": "Unique Gift",
+      "description": "GM-defined special ability/cyberware.",
+      "level_1": "Gain a character-defining ability that provides options not normally available.",
+      "level_2": "N/A"
+    },
+    {
+      "name": "Unregistered",
+      "description": "You do not exist in databases.",
+      "level_1": "No government/corp records associated with you. Cannot use banks/own formal property.",
+      "level_2": "N/A"
+    },
+    {
+      "name": "Whirlwind Assault",
+      "description": "Frenzy of melee havoc.",
+      "level_1": "Gain Fight skill. Once/scene apply Shock damage to all foes in range as On Turn.",
+      "level_2": "The first time you kill someone in a round, instantly gain a second attack."
+    }
+  ]
+}

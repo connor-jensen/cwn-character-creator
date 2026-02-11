@@ -1,0 +1,88 @@
+{
+  "name": "Kai Nakamura",
+  "level": 1,
+  "attributes": {
+    "strength": {
+      "score": 9,
+      "mod": 0
+    },
+    "dexterity": {
+      "score": 14,
+      "mod": 1
+    },
+    "constitution": {
+      "score": 13,
+      "mod": 0
+    },
+    "intelligence": {
+      "score": 14,
+      "mod": 1
+    },
+    "wisdom": {
+      "score": 14,
+      "mod": 1
+    },
+    "charisma": {
+      "score": 8,
+      "mod": 0
+    }
+  },
+  "background": "Criminal",
+  "skills": {
+    "Sneak": 0,
+    "Notice": 0,
+    "Connect": 0,
+    "Talk": 0
+  },
+  "edges": [
+    "Focused",
+    "Ghost"
+  ],
+  "foci": [
+    {
+      "name": "All Natural",
+      "level": 1
+    }
+  ],
+  "contacts": [
+    {
+      "name": "Razor",
+      "relationship": "Friend",
+      "description": "Old fence from the neighborhood"
+    }
+  ],
+  "hp": 4,
+  "bab": 0,
+  "savingThrows": {
+    "physical": 15,
+    "evasion": 14,
+    "mental": 14
+  },
+  "inventory": [
+    {
+      "name": "Light Pistol",
+      "damage": "1d6",
+      "range": "30/100m",
+      "mag": 12
+    },
+    {
+      "name": "Knife",
+      "damage": "1d4",
+      "shock": "1/AC15"
+    },
+    {
+      "name": "Armored Undersuit",
+      "type": "light"
+    }
+  ],
+  "computed": {
+    "ac": {
+      "melee": 13,
+      "ranged": 12
+    },
+    "weaponBonuses": {
+      "Light Pistol (Shoot/Dex)": -1,
+      "Knife (Fight/Str, untrained)": -2
+    }
+  }
+}
