@@ -1121,8 +1121,7 @@
 }
 
 .bg-item-selected::after {
-  background: var(--amber) !important;
-  transform: translateY(0) !important;
+  transform: translateY(100%) !important;
 }
 
 .bg-confirm-wrap {

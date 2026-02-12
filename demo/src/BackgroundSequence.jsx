@@ -45,7 +45,8 @@ export default function BackgroundSequence({ char, onComplete }) {
 
   /* ---- elimination state ---- */
   const [eliminatedNames, setEliminatedNames] = useState(new Set());
-  const [bgPhase, setBgPhase] = useState("eliminating");
+  const [revealedNames, setRevealedNames] = useState(new Set());
+  const [bgPhase, setBgPhase] = useState("revealing");
   const [offers, setOffers] = useState(null);
   const [selectedBg, setSelectedBg] = useState(null);
   const cancelledRef = useRef(false);
@@ -78,44 +79,46 @@ export default function BackgroundSequence({ char, onComplete }) {
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
   /* ================================================================
-     ELIMINATE — show all backgrounds, remove non-selected one by one
+     ELIMINATE — all dimmed, reveal 3 selected, then collapse others
      ================================================================ */
   useEffect(() => {
     if (phase !== "eliminate") return;
     let cancelled = false;
     setEliminatedNames(new Set());
-    setBgPhase("eliminating");
+    setRevealedNames(new Set());
+    setBgPhase("revealing");
 
     const generated = offerBackgrounds(wcRef.current, 3);
     setOffers(generated);
 
-    const selectedNames = new Set(generated.map((b) => b.name));
-    const toEliminate = allBackgrounds
-      .filter((b) => !selectedNames.has(b.name))
-      .map((b) => b.name);
-
-    /* Fisher-Yates shuffle for random elimination order */
-    for (let i = toEliminate.length - 1; i > 0; i--) {
+    /* shuffle reveal order for variety */
+    const toReveal = generated.map((b) => b.name);
+    for (let i = toReveal.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [toEliminate[i], toEliminate[j]] = [toEliminate[j], toEliminate[i]];
+      [toReveal[i], toReveal[j]] = [toReveal[j], toReveal[i]];
     }
 
-    const delay = 2400 / toEliminate.length;
+    const nonSelected = new Set(
+      allBackgrounds.filter((b) => !toReveal.includes(b.name)).map((b) => b.name)
+    );
 
     async function run() {
-      await sleep(400);
+      await sleep(600);
 
-      for (let i = 0; i < toEliminate.length; i++) {
+      /* reveal selected one by one */
+      for (let i = 0; i < toReveal.length; i++) {
         if (cancelled) return;
-        setEliminatedNames((prev) => new Set([...prev, toEliminate[i]]));
-        await sleep(delay);
+        setRevealedNames((prev) => new Set([...prev, toReveal[i]]));
+        await sleep(500);
       }
 
       if (cancelled) return;
       setBgPhase("highlighting");
-      await sleep(800);
+      await sleep(1000);
 
       if (cancelled) return;
+      /* collapse non-selected */
+      setEliminatedNames(nonSelected);
       setBgPhase("expanding");
       await sleep(1000);
 
@@ -509,7 +512,7 @@ export default function BackgroundSequence({ char, onComplete }) {
             transition={{ duration: 0.3 }}
           >
             <AnimatePresence>
-              {bgPhase === "eliminating" && (
+              {(bgPhase === "revealing" || bgPhase === "highlighting") && (
                 <motion.div
                   key="bg-pool-header"
                   className="bg-item-row bg-pool-header"
@@ -528,10 +531,10 @@ export default function BackgroundSequence({ char, onComplete }) {
                 {allBackgrounds
                   .filter((b) => !eliminatedNames.has(b.name))
                   .map((b) => {
-                    const isHighlighted =
-                      bgPhase === "highlighting" ||
-                      bgPhase === "expanding" ||
-                      bgPhase === "pickable";
+                    const isRevealed = revealedNames.has(b.name);
+                    const isRevealing = bgPhase === "revealing" || bgPhase === "highlighting";
+                    const isDimmed = isRevealing && !isRevealed;
+                    const showCyan = (isRevealing && isRevealed) || bgPhase === "expanding" || bgPhase === "pickable";
                     const isExpanded =
                       bgPhase === "expanding" || bgPhase === "pickable";
                     const isPickable = bgPhase === "pickable";
@@ -545,18 +548,19 @@ export default function BackgroundSequence({ char, onComplete }) {
                       <motion.div
                         key={b.name}
                         layout
-                        className={`bg-item${isExpanded ? " bg-item-expanded" : ""}${isPickable ? " bg-item-pickable" : ""}${isSelected ? " bg-item-selected" : ""}`}
+                        className={`bg-item${isExpanded ? " bg-item-expanded" : ""}${isPickable ? " bg-item-pickable" : ""}${isSelected ? " bg-item-selected" : ""}${isDimmed ? " bg-item-dimmed" : ""}`}
                         animate={{
                           backgroundColor: isSelected
                             ? "rgba(255, 182, 39, 0.1)"
-                            : isHighlighted
+                            : showCyan
                               ? "rgba(0, 229, 255, 0.08)"
                               : "rgba(0, 0, 0, 0)",
                           borderColor: isSelected
                             ? "rgba(255, 182, 39, 0.5)"
-                            : isHighlighted
+                            : showCyan
                               ? "rgba(0, 229, 255, 0.2)"
                               : "rgba(255, 255, 255, 0.06)",
+                          opacity: isDimmed ? 0.3 : 1,
                         }}
                         exit={{
                           opacity: 0,
@@ -568,8 +572,9 @@ export default function BackgroundSequence({ char, onComplete }) {
                         }}
                         transition={{
                           layout: { duration: 0.3, ease: "easeInOut" },
-                          backgroundColor: { duration: 0.3 },
-                          borderColor: { duration: 0.3 },
+                          backgroundColor: { duration: 0.4 },
+                          borderColor: { duration: 0.4 },
+                          opacity: { duration: 0.4 },
                           default: { duration: 0.2 },
                         }}
                         onClick={isPickable ? () => setSelectedBg(b.name) : undefined}
@@ -577,12 +582,12 @@ export default function BackgroundSequence({ char, onComplete }) {
                         {!isExpanded && (
                           <div className="bg-item-row">
                             <span
-                              className={`bg-pool-idx${isHighlighted ? " bg-highlighted" : ""}`}
+                              className={`bg-pool-idx${showCyan ? " bg-highlighted" : ""}`}
                             >
                               {bgIdx}
                             </span>
                             <span
-                              className={`bg-pool-name${isHighlighted ? " bg-highlighted" : ""}`}
+                              className={`bg-pool-name${showCyan ? " bg-highlighted" : ""}`}
                             >
                               {b.name}
                             </span>
