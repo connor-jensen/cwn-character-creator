@@ -1,6 +1,6 @@
 import data from "./cities_without_number_data.json" with { type: "json" };
 
-export const { edges, backgrounds, foci } = data;
+export const { edges, backgrounds, foci, contactTables } = data;
 
 // --- Dice Utilities ---
 
@@ -564,8 +564,9 @@ export const STARTING_WEAPONS = [
   { name: "Light Pistol", category: "weapon", type: "Firearm", damage: "1d6", trauma_die: "1d8", trauma_rating: "x2", attribute: "Dexterity", range: "10/80", mag: 15, enc: 1 },
   { name: "Heavy Pistol", category: "weapon", type: "Firearm", damage: "1d8", trauma_die: "1d6", trauma_rating: "x3", attribute: "Dexterity", range: "10/100", mag: 8, enc: 1 },
   { name: "Rifle", category: "weapon", type: "Firearm", damage: "1d10+2", trauma_die: "1d8", trauma_rating: "x3", attribute: "Dexterity", range: "200/400", mag: 6, enc: 2 },
-  { name: "Knife", category: "weapon", type: "Melee/Thrown", damage: "1d4", shock: "1/AC 15", trauma_die: "1d6", trauma_rating: "x3", attribute: "Str/Dex", range: "10/20", enc: 1 },
 ];
+
+export const STARTING_KNIFE = { name: "Knife", category: "weapon", type: "Melee/Thrown", damage: "1d4", shock: "1/AC 15", trauma_die: "1d6", trauma_rating: "x3", attribute: "Str/Dex", range: "10/20", enc: 1 };
 
 export const STARTING_ARMOR = [
   { name: "Melee", category: "armor", meleeAC: 13, rangedAC: 10, soak: 2, traumaMod: 0 },
@@ -584,7 +585,7 @@ export function equipStartingGear(char, weaponName, armorName) {
     (item) => item.category !== "weapon" && item.category !== "armor"
   );
 
-  char.inventory.push({ ...weapon }, { ...armor });
+  char.inventory.push({ ...weapon }, { ...STARTING_KNIFE }, { ...armor });
   return char;
 }
 
@@ -618,5 +619,59 @@ export function offerEdges(char, count = 3) {
 export function offerFoci(char, count = 3) {
   const exclude = char.foci.map((f) => f.name);
   return sampleWithout(foci, exclude, count);
+}
+
+// --- Contact Generation ---
+
+export function generateContact(relationship) {
+  const ct = contactTables;
+  const socialCircleRoll = rollDie(6);
+  const howWellKnownRoll = rollDie(4);
+  const howMetRoll = rollDie(12);
+  const lastInteractionRoll = rollDie(8);
+  const whatTheyGetRoll = rollDie(10);
+
+  const doCount = relationship === "friend" ? 2 : 1;
+  const whatTheyCanDoForYouRolls = [];
+  for (let i = 0; i < doCount; i++) {
+    whatTheyCanDoForYouRolls.push(rollDie(20));
+  }
+
+  return {
+    name: "",
+    relationship,
+    socialCircle: ct.socialCircles[socialCircleRoll - 1],
+    howWellKnown: ct.howWellKnown[howWellKnownRoll - 1],
+    howMet: ct.howMet[howMetRoll - 1],
+    lastInteraction: ct.lastInteraction[lastInteractionRoll - 1],
+    whatTheyGet: ct.whatTheyGet[whatTheyGetRoll - 1],
+    whatTheyCanDoForYou: whatTheyCanDoForYouRolls.map((r) => ct.whatTheyCanDoForYou[r - 1]),
+    rolls: {
+      socialCircle: socialCircleRoll,
+      howWellKnown: howWellKnownRoll,
+      howMet: howMetRoll,
+      lastInteraction: lastInteractionRoll,
+      whatTheyGet: whatTheyGetRoll,
+      whatTheyCanDoForYou: whatTheyCanDoForYouRolls,
+    },
+  };
+}
+
+export function getContactAllotment(chaMod) {
+  switch (chaMod) {
+    case -2: return [];
+    case -1: return ["acquaintance"];
+    case 0: return Math.random() < 0.5
+      ? ["acquaintance", "acquaintance"]
+      : ["friend"];
+    case 1: return ["friend", "acquaintance"];
+    case 2: return ["friend", "friend"];
+    default: return [];
+  }
+}
+
+export function addGeneratedContact(char, contact) {
+  char.contacts.push(contact);
+  return char;
 }
 

@@ -9,7 +9,11 @@ import {
   resolvePending,
   calculateDerivedStats,
   equipStartingGear,
+  generateContact,
+  addGeneratedContact,
+  getContactAllotment,
   STARTING_WEAPONS,
+  STARTING_KNIFE,
   STARTING_ARMOR,
   offerEdges,
   offerFoci,
@@ -21,6 +25,7 @@ import {
 import DiceRollSequence from "./DiceRollSequence.jsx";
 import BackgroundSequence from "./BackgroundSequence.jsx";
 import SelectionSequence from "./SelectionSequence.jsx";
+import ContactSequence from "./ContactSequence.jsx";
 import "./App.css";
 
 const STEPS = [
@@ -31,11 +36,12 @@ const STEPS = [
   "pick_focus",
   "bonus_skill",
   "choose_gear",
+  "generate_contacts",
   "done",
 ];
 
 const STEP_LABELS = [
-  "ATTR", "BG", "EDGE 1", "EDGE 2", "FOCUS", "BONUS", "GEAR", "DONE",
+  "ATTRIBUTES", "BACKGROUND", "EDGE 1", "EDGE 2", "FOCUS", "BONUS", "GEAR", "CONTACTS", "DONE",
 ];
 
 const ALL_SKILLS = [
@@ -111,6 +117,7 @@ function App() {
   const [pendingQueue, setPendingQueue] = useState([]);
   const [selectedWeapon, setSelectedWeapon] = useState(null);
   const [selectedArmor, setSelectedArmor] = useState(null);
+  const [generatedContacts, setGeneratedContacts] = useState(null);
 
   const currentStep = STEPS[step];
 
@@ -126,6 +133,7 @@ function App() {
     setPendingQueue([]);
     setSelectedWeapon(null);
     setSelectedArmor(null);
+    setGeneratedContacts(null);
   };
 
   // Auto-generate offers when entering edge/focus steps
@@ -135,6 +143,18 @@ function App() {
     } else if (currentStep === "pick_focus" && !offers) {
       setOffers(offerFoci(char, 3));
     }
+  }, [currentStep]);
+
+  // Auto-generate contacts when entering contacts step
+  useEffect(() => {
+    if (currentStep !== "generate_contacts") return;
+    const allotment = getContactAllotment(char.attributes.charisma.mod);
+    if (allotment.length === 0) {
+      advance();
+      return;
+    }
+    const generated = allotment.map((rel) => generateContact(rel));
+    setGeneratedContacts(generated);
   }, [currentStep]);
 
   // --- Pending resolution ---
@@ -218,6 +238,16 @@ function App() {
   const handleEquipGear = () => {
     const next = deepClone(char);
     equipStartingGear(next, selectedWeapon, selectedArmor);
+    setChar(next);
+    advance();
+  };
+
+  const handleContactsComplete = () => {
+    if (!generatedContacts) return;
+    const next = deepClone(char);
+    for (const contact of generatedContacts) {
+      addGeneratedContact(next, contact);
+    }
     setChar(next);
     advance();
   };
@@ -384,12 +414,12 @@ function App() {
                   <div className="step-label">Step 07</div>
                   <h2 className="step-title">Starting Gear</h2>
                   <p className="step-desc">
-                    Select one weapon and one armor loadout for your operative.
+                    Select one weapon and one armor loadout. A knife ({STARTING_KNIFE.damage}, shock {STARTING_KNIFE.shock}) is automatically included.
                   </p>
 
-                  <div className="gear-section">
-                    <div className="gear-section-label">Choose Weapon</div>
-                    <div className="gear-grid">
+                  <div className="gear-columns">
+                    <div className="gear-column">
+                      <div className="gear-section-label">Choose Weapon</div>
                       {STARTING_WEAPONS.map((w) => (
                         <button
                           key={w.name}
@@ -398,6 +428,11 @@ function App() {
                         >
                           <span className="gear-card-type">{w.type}</span>
                           <h3>{w.name}</h3>
+                          <p className="gear-card-hint">
+                            {w.name === "Light Pistol" && "Less damage, crits more often."}
+                            {w.name === "Heavy Pistol" && "More damage, crits less often."}
+                            {w.name === "Rifle" && "Long range, high damage, high crit rate, but can\u2019t be concealed."}
+                          </p>
                           <div className="gear-card-stats">
                             <div className="gear-stat">
                               <span className="gear-stat-label">DMG</span>
@@ -409,7 +444,7 @@ function App() {
                             </div>
                             <div className="gear-stat">
                               <span className="gear-stat-label">MAG</span>
-                              <span className="gear-stat-value">{w.mag || "—"}</span>
+                              <span className="gear-stat-value">{w.mag || "\u2014"}</span>
                             </div>
                             <div className="gear-stat">
                               <span className="gear-stat-label">ENC</span>
@@ -425,21 +460,13 @@ function App() {
                               <span className="gear-stat-label">Rating</span>
                               <span className="gear-stat-value">{w.trauma_rating}</span>
                             </div>
-                            {w.shock && (
-                              <div className="gear-stat">
-                                <span className="gear-stat-label">Shock</span>
-                                <span className="gear-stat-value">{w.shock}</span>
-                              </div>
-                            )}
                           </div>
                         </button>
                       ))}
                     </div>
-                  </div>
 
-                  <div className="gear-section">
-                    <div className="gear-section-label">Choose Armor</div>
-                    <div className="gear-grid">
+                    <div className="gear-column">
+                      <div className="gear-section-label">Choose Armor</div>
                       {STARTING_ARMOR.map((a) => (
                         <button
                           key={a.name}
@@ -492,10 +519,22 @@ function App() {
                 </div>
               )}
 
+              {/* --- Generate Contacts --- */}
+              {currentStep === "generate_contacts" && generatedContacts && (
+                <div className="step-panel" key="contacts">
+                  <div className="step-label">Step 08</div>
+                  <h2 className="step-title">Starting Contacts</h2>
+                  <ContactSequence
+                    contacts={generatedContacts}
+                    onComplete={handleContactsComplete}
+                  />
+                </div>
+              )}
+
               {/* --- Done (finalize button) --- */}
               {currentStep === "done" && (
                 <div className="step-panel" key="done">
-                  <div className="step-label">Step 08</div>
+                  <div className="step-label">Step 09</div>
                   <h2 className="step-title">Character Complete</h2>
                   <p className="step-desc">
                     Finalize your operative. Roll for hit points and calculate combat readiness.
@@ -621,6 +660,58 @@ function PendingResolver({ item, char, onResolve }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ===== Sheet Contact ===== */
+
+function SheetContact({ contact }) {
+  const [expanded, setExpanded] = useState(false);
+  const c = contact;
+
+  // Old-format contacts (from Voice of the People)
+  if (!c.whatTheyCanDoForYou) {
+    return (
+      <div className="sheet-list-item">
+        <strong>
+          {c.name || "Unnamed"}{" "}
+          <span className="sheet-contact-rel">{c.relationship}</span>
+        </strong>
+        {c.description && <span className="sheet-item-desc">{c.description}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="sheet-list-item sheet-contact">
+      <div className="sheet-contact-header">
+        <strong>
+          {c.name || "Unnamed"}{" "}
+          <span className="sheet-contact-rel">{c.relationship}</span>
+        </strong>
+        <button
+          className="sheet-contact-toggle"
+          onClick={() => setExpanded(!expanded)}
+          aria-label={expanded ? "Collapse" : "Expand"}
+        >
+          {expanded ? "\u25B4" : "\u25BE"}
+        </button>
+      </div>
+      <ul className="sheet-contact-abilities">
+        {c.whatTheyCanDoForYou.map((ability, i) => (
+          <li key={i}>{ability}</li>
+        ))}
+      </ul>
+      {expanded && (
+        <div className="sheet-contact-details">
+          <div className="sheet-contact-detail"><span>Circle:</span> {c.socialCircle}</div>
+          <div className="sheet-contact-detail"><span>Known:</span> {c.howWellKnown}</div>
+          <div className="sheet-contact-detail"><span>Met:</span> {c.howMet}</div>
+          <div className="sheet-contact-detail"><span>Last:</span> {c.lastInteraction}</div>
+          <div className="sheet-contact-detail"><span>They get:</span> {c.whatTheyGet}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -799,6 +890,19 @@ function Sidebar({ char, isFullWidth }) {
                     </div>
                   </div>
                 ))}
+            </div>
+          </div>
+        )}
+
+        {char.contacts.length > 0 && (
+          <div className="sheet-section">
+            <div className="sheet-section-title">
+              <span>Contacts</span>
+            </div>
+            <div className="sheet-list">
+              {char.contacts.map((c, i) => (
+                <SheetContact key={i} contact={c} />
+              ))}
             </div>
           </div>
         )}

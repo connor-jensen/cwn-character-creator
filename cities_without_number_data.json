@@ -356,5 +356,79 @@
       "level_1": "Gain Fight skill. Once/scene apply Shock damage to all foes in range as On Turn.",
       "level_2": "The first time you kill someone in a round, instantly gain a second attack."
     }
-  ]
+  ],
+  "contactTables": {
+    "socialCircles": [
+      "Street people, gangs, and criminal types",
+      "Corpers and other \u201crespectable people\u201d",
+      "Soldiers, mercs, or martial professionals",
+      "Entertainers, artists, or the demimonde",
+      "Badlanders, backwoodsmen, and ruralists",
+      "Docs, techs, hackers, or other skilled pros"
+    ],
+    "howWellKnown": [
+      "You just met them within the past month",
+      "You\u2019ve known them for several jobs so far",
+      "You go back a long time together",
+      "You\u2019ve known them since you were young"
+    ],
+    "howMet": [
+      "Encountered each other as youths",
+      "Were on opposite sides of a job once",
+      "Pulled them out of a fight or disaster",
+      "Hit it off at a club or social venue",
+      "Were hired with them on a prior job",
+      "A fixer sent you to them for help before",
+      "Covered up a major mistake they made",
+      "Introduced by a mutual friend",
+      "You shared a hobby or interest group",
+      "Met during your professional duties",
+      "They were a landlord or neighbor",
+      "They were an employer or fellow worker"
+    ],
+    "lastInteraction": [
+      "You bailed them out of a bad situation",
+      "A wild carouse from a shared payday",
+      "A minor job gone wrong for both of you",
+      "You got a problem person off their back",
+      "You used your Edges to solve their problem",
+      "A minor argument over different ideals",
+      "Helped them with their day job a bit",
+      "Did a favor for someone important to them"
+    ],
+    "whatTheyGet": [
+      "Their day job has a use for your skills",
+      "They know your parents or family well",
+      "They think you\u2019re good company",
+      "There is or was a romantic relationship",
+      "They owe you big for an old favor",
+      "They think you\u2019re going to make it big",
+      "They trust you to a rare degree for them",
+      "You shared an idealistic cause in the past",
+      "You\u2019re a relative or childhood friend",
+      "You take care of an important task for them"
+    ],
+    "whatTheyCanDoForYou": [
+      "Sell you not-too-very-illegal weaponry",
+      "Get you pharmaceutical and street drugs",
+      "Get you an inside line on a local corp",
+      "Drive you around or loan you a vehicle",
+      "Stitch you up or do cyberdoc work",
+      "Smuggle you or objects in and out",
+      "Help you find profitable operator jobs",
+      "Get you some clemency from city police",
+      "Make a local gang play nice with you",
+      "Find you nice used cyberware",
+      "Acquire useful street information",
+      "Give you a safehouse for a while",
+      "Broker contracts with a type of skilled pro",
+      "Fence stolen goods without too big a cut",
+      "Charm information out of a given target",
+      "Maintain or fix your gear for you",
+      "Get you in touch with a type of criminal",
+      "Sell you specialized or unique programs",
+      "Get you permits or city gov information",
+      "Find people who don\u2019t want to be found"
+    ]
+  }
 }

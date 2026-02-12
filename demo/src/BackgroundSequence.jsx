@@ -9,6 +9,7 @@ import {
   resolvePending,
   backgrounds as allBackgrounds,
 } from "../../cwn-engine.js";
+import { ROLL_STEP } from "./timing.js";
 
 const ALL_SKILLS = [
   "Connect", "Drive", "Exert", "Fight", "Fix", "Heal",
@@ -18,6 +19,13 @@ const COMBAT_SKILLS = ["Shoot", "Fight"];
 const ATTR_NAMES = [
   "strength", "dexterity", "constitution",
   "intelligence", "wisdom", "charisma",
+];
+
+const PHASE_ORDER = [
+  "eliminate", "pick", "free_skill_resolve",
+  "growth_roll", "growth_resolve", "growth_done",
+  "learn1_roll", "learn1_resolve", "learn1_done",
+  "learn2_roll", "learn2_resolve", "learn2_done",
 ];
 
 function deepClone(obj) {
@@ -49,7 +57,7 @@ export default function BackgroundSequence({ char, onComplete }) {
   const [bgPhase, setBgPhase] = useState("revealing");
   const [offers, setOffers] = useState(null);
   const [selectedBg, setSelectedBg] = useState(null);
-  const cancelledRef = useRef(false);
+  const [confirmedBg, setConfirmedBg] = useState(null);
 
   /* ---- background data ---- */
   const [bgData, setBgData] = useState(null);
@@ -59,7 +67,7 @@ export default function BackgroundSequence({ char, onComplete }) {
   /* ---- pending (free skill) ---- */
   const [pendingItems, setPendingItems] = useState([]);
 
-  /* ---- roll state ---- */
+  /* ---- roll state (shared for active roll) ---- */
   const [spinValue, setSpinValue] = useState(1);
   const [dieLocked, setDieLocked] = useState(false);
   const [highlightedRow, setHighlightedRow] = useState(-1);
@@ -70,13 +78,43 @@ export default function BackgroundSequence({ char, onComplete }) {
   const [splitMode, setSplitMode] = useState(false);
   const [stat1, setStat1] = useState("");
   const [stat2, setStat2] = useState("");
+  const [selectedResolveChoice, setSelectedResolveChoice] = useState(null);
 
-  /* ---- roll outcome (for done phases) ---- */
-  const [rollOutcome, setRollOutcome] = useState("");
+  /* ---- roll outcomes (per roll type) ---- */
+  const [rollOutcomes, setRollOutcomes] = useState({ growth: "", learn1: "", learn2: "" });
 
   /* stable ref for onComplete */
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  /* reset resolve choice on phase change */
+  useEffect(() => {
+    setSelectedResolveChoice(null);
+  }, [phase]);
+
+  /* ---- phase helpers ---- */
+  const phaseAtLeast = (target) =>
+    PHASE_ORDER.indexOf(phase) >= PHASE_ORDER.indexOf(target);
+
+  const getRollDisplayState = (rollPhase, rollKey) => {
+    if (phase === rollPhase) {
+      return { dieValue: spinValue, locked: dieLocked, highlight: highlightedRow, isStatic: false };
+    }
+    return {
+      dieValue: preRolls.current[rollKey],
+      locked: true,
+      highlight: preRolls.current[rollKey] - 1,
+      isStatic: true,
+    };
+  };
+
+  /* active roll type (growth / learn1 / learn2 / null) */
+  const activeRollType = (() => {
+    if (["growth_roll", "growth_resolve", "growth_done"].includes(phase)) return "growth";
+    if (["learn1_roll", "learn1_resolve", "learn1_done"].includes(phase)) return "learn1";
+    if (["learn2_roll", "learn2_resolve", "learn2_done"].includes(phase)) return "learn2";
+    return null;
+  })();
 
   /* ================================================================
      ELIMINATE — all dimmed, reveal 3 selected, then collapse others
@@ -91,7 +129,6 @@ export default function BackgroundSequence({ char, onComplete }) {
     const generated = offerBackgrounds(wcRef.current, 3);
     setOffers(generated);
 
-    /* shuffle reveal order for variety */
     const toReveal = generated.map((b) => b.name);
     for (let i = toReveal.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -104,24 +141,18 @@ export default function BackgroundSequence({ char, onComplete }) {
 
     async function run() {
       await sleep(600);
-
-      /* reveal selected one by one */
       for (let i = 0; i < toReveal.length; i++) {
         if (cancelled) return;
         setRevealedNames((prev) => new Set([...prev, toReveal[i]]));
         await sleep(500);
       }
-
       if (cancelled) return;
       setBgPhase("highlighting");
       await sleep(1000);
-
       if (cancelled) return;
-      /* collapse non-selected */
       setEliminatedNames(nonSelected);
       setBgPhase("expanding");
       await sleep(1000);
-
       if (!cancelled) {
         setBgPhase("pickable");
         setPhase("pick");
@@ -159,15 +190,13 @@ export default function BackgroundSequence({ char, onComplete }) {
     const actual = preRolls.current[rollKey];
     let cancelled = false;
 
-    /* lock die at 2s */
     const lockTimer = setTimeout(() => {
       if (cancelled) return;
       setDieLocked(true);
       setSpinValue(actual);
       setHighlightedRow(actual - 1);
-    }, 2000);
+    }, ROLL_STEP * 2);
 
-    /* process result at 2.8s */
     const processTimer = setTimeout(() => {
       if (cancelled) return;
       const bd = bgDataRef.current;
@@ -183,7 +212,7 @@ export default function BackgroundSequence({ char, onComplete }) {
           try {
             resolveGrowthRoll(next, entry, {});
             setWorkingChar(next);
-            setRollOutcome(`Gained ${entry}`);
+            setRollOutcomes(prev => ({ ...prev, growth: `Gained ${entry}` }));
             setTimeout(() => { if (!cancelled) setPhase("growth_done"); }, 600);
           } catch {
             setResolveInfo({ type: "growth_redirect", original: entry });
@@ -195,8 +224,8 @@ export default function BackgroundSequence({ char, onComplete }) {
           setPhase("growth_resolve");
         }
       } else {
-        /* learning roll */
         const entry = bd.learning[actual - 1];
+        const outcomeKey = currentPhase === "learn1_roll" ? "learn1" : "learn2";
 
         if (entry === "Any Skill" || entry === "Any Combat") {
           setResolveInfo({
@@ -208,7 +237,7 @@ export default function BackgroundSequence({ char, onComplete }) {
           try {
             resolveLearningPick(next, entry);
             setWorkingChar(next);
-            setRollOutcome(`Learned ${entry}`);
+            setRollOutcomes(prev => ({ ...prev, [outcomeKey]: `Learned ${entry}` }));
             const donePh = currentPhase === "learn1_roll" ? "learn1_done" : "learn2_done";
             setTimeout(() => { if (!cancelled) setPhase(donePh); }, 600);
           } catch {
@@ -217,7 +246,7 @@ export default function BackgroundSequence({ char, onComplete }) {
           }
         }
       }
-    }, 2800);
+    }, ROLL_STEP * 2 + 800);
 
     return () => {
       cancelled = true;
@@ -227,10 +256,33 @@ export default function BackgroundSequence({ char, onComplete }) {
   }, [phase]);
 
   /* ================================================================
+     AUTO-ADVANCE from done phases
+     ================================================================ */
+  useEffect(() => {
+    if (phase === "growth_done") {
+      const timer = setTimeout(() => setPhase("learn1_roll"), 1000);
+      return () => clearTimeout(timer);
+    }
+    if (phase === "learn1_done") {
+      const timer = setTimeout(() => setPhase("learn2_roll"), 1000);
+      return () => clearTimeout(timer);
+    }
+    if (phase === "learn2_done") {
+      const timer = setTimeout(() => onCompleteRef.current(wcRef.current), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  /* ================================================================
      HANDLERS
      ================================================================ */
 
   const handlePickBg = (bgName) => {
+    setConfirmedBg(bgName);
+    const unselected = offers.filter(o => o.name !== bgName).map(o => o.name);
+    setEliminatedNames(prev => new Set([...prev, ...unselected]));
+    setBgPhase("confirmed");
+
     const next = deepClone(workingChar);
     const { pending, pendingChoices } = applyBackground(next, bgName);
     setWorkingChar(next);
@@ -260,7 +312,7 @@ export default function BackgroundSequence({ char, onComplete }) {
     const next = deepClone(workingChar);
     resolveGrowthRoll(next, growthEntry, { stat });
     setWorkingChar(next);
-    setRollOutcome(`Applied ${growthEntry} \u2192 ${stat}`);
+    setRollOutcomes(prev => ({ ...prev, growth: `Applied ${growthEntry} \u2192 ${stat}` }));
     setTimeout(() => setPhase("growth_done"), 400);
   };
 
@@ -268,7 +320,7 @@ export default function BackgroundSequence({ char, onComplete }) {
     const next = deepClone(workingChar);
     resolveGrowthRoll(next, growthEntry, { split: { stat1, stat2 } });
     setWorkingChar(next);
-    setRollOutcome(`Applied +1 ${stat1}, +1 ${stat2}`);
+    setRollOutcomes(prev => ({ ...prev, growth: `Applied +1 ${stat1}, +1 ${stat2}` }));
     setSplitMode(false);
     setStat1("");
     setStat2("");
@@ -279,24 +331,32 @@ export default function BackgroundSequence({ char, onComplete }) {
     const next = deepClone(workingChar);
     resolveLearningPick(next, skillName);
     setWorkingChar(next);
-    setRollOutcome(`Gained ${skillName}`);
+    setRollOutcomes(prev => ({ ...prev, growth: `Gained ${skillName}` }));
     setTimeout(() => setPhase("growth_done"), 400);
   };
 
   const handleLearningResolve = (skillName) => {
-    const currentPhase = phase;
+    const key = phase === "learn1_resolve" ? "learn1" : "learn2";
     const next = deepClone(workingChar);
     resolveLearningPick(next, skillName);
     setWorkingChar(next);
-    setRollOutcome(`Learned ${skillName}`);
-    const donePh = currentPhase === "learn1_resolve" ? "learn1_done" : "learn2_done";
+    setRollOutcomes(prev => ({ ...prev, [key]: `Learned ${skillName}` }));
+    const donePh = phase === "learn1_resolve" ? "learn1_done" : "learn2_done";
     setTimeout(() => setPhase(donePh), 400);
   };
 
-  const handleNextAfterRoll = () => {
-    if (phase === "growth_done") setPhase("learn1_roll");
-    else if (phase === "learn1_done") setPhase("learn2_roll");
-    else onComplete(workingChar);
+  const handleConfirmResolve = () => {
+    if (!selectedResolveChoice) return;
+    if (phase === "growth_resolve") {
+      if (resolveInfo?.type === "growth_stat") {
+        handleGrowthStatResolve(selectedResolveChoice);
+      } else {
+        handleGrowthSkillResolve(selectedResolveChoice);
+      }
+    } else {
+      handleLearningResolve(selectedResolveChoice);
+    }
+    setSelectedResolveChoice(null);
   };
 
   const availableSkills = ALL_SKILLS.filter(
@@ -319,7 +379,11 @@ export default function BackgroundSequence({ char, onComplete }) {
           </p>
           <div className="choices">
             {availableSkills.map((s) => (
-              <button key={s} className="btn-choice" onClick={() => handleGrowthSkillResolve(s)}>
+              <button
+                key={s}
+                className={`btn-choice${selectedResolveChoice === s ? " btn-choice-selected" : ""}`}
+                onClick={() => setSelectedResolveChoice(s)}
+              >
                 {s}
               </button>
             ))}
@@ -336,7 +400,11 @@ export default function BackgroundSequence({ char, onComplete }) {
           </p>
           <div className="choices">
             {availableSkills.map((s) => (
-              <button key={s} className="btn-choice" onClick={() => handleGrowthSkillResolve(s)}>
+              <button
+                key={s}
+                className={`btn-choice${selectedResolveChoice === s ? " btn-choice-selected" : ""}`}
+                onClick={() => setSelectedResolveChoice(s)}
+              >
                 {s}
               </button>
             ))}
@@ -365,7 +433,7 @@ export default function BackgroundSequence({ char, onComplete }) {
             <input
               type="checkbox"
               checked={splitMode}
-              onChange={() => setSplitMode(!splitMode)}
+              onChange={() => { setSplitMode(!splitMode); setSelectedResolveChoice(null); }}
             />
             Split into +1/+1
           </label>
@@ -397,8 +465,8 @@ export default function BackgroundSequence({ char, onComplete }) {
             {validStats.map((s) => (
               <button
                 key={s}
-                className="btn-choice"
-                onClick={() => handleGrowthStatResolve(s)}
+                className={`btn-choice${selectedResolveChoice === s ? " btn-choice-selected" : ""}`}
+                onClick={() => setSelectedResolveChoice(s)}
               >
                 {s}
                 <span className="btn-choice-sub">
@@ -424,7 +492,11 @@ export default function BackgroundSequence({ char, onComplete }) {
           </p>
           <div className="choices">
             {availableSkills.map((s) => (
-              <button key={s} className="btn-choice" onClick={() => handleLearningResolve(s)}>
+              <button
+                key={s}
+                className={`btn-choice${selectedResolveChoice === s ? " btn-choice-selected" : ""}`}
+                onClick={() => setSelectedResolveChoice(s)}
+              >
                 {s}
               </button>
             ))}
@@ -451,7 +523,11 @@ export default function BackgroundSequence({ char, onComplete }) {
         </p>
         <div className="choices">
           {skills.map((s) => (
-            <button key={s} className="btn-choice" onClick={() => handleLearningResolve(s)}>
+            <button
+              key={s}
+              className={`btn-choice${selectedResolveChoice === s ? " btn-choice-selected" : ""}`}
+              onClick={() => setSelectedResolveChoice(s)}
+            >
               {s}
             </button>
           ))}
@@ -460,209 +536,314 @@ export default function BackgroundSequence({ char, onComplete }) {
     );
   };
 
-  const renderDie = () => (
-    <motion.div
-      className={`die-block ${dieLocked ? "locked" : "spinning"} bg-die`}
-      animate={
-        dieLocked
-          ? {
-              scale: [1, 1.25, 0.95, 1],
-              boxShadow: [
-                "0 0 0px rgba(0,229,255,0)",
-                "0 0 30px rgba(0,229,255,0.6)",
-                "0 0 15px rgba(0,229,255,0.3)",
-                "0 0 8px rgba(0,229,255,0.15)",
-              ],
-            }
-          : {}
-      }
-      transition={dieLocked ? { duration: 0.5, ease: "easeOut" } : {}}
-    >
-      {spinValue}
-    </motion.div>
-  );
-
-  const renderRollTable = (entries) => (
-    <div className="bg-roll-table">
-      {entries.map((entry, i) => (
-        <div
-          key={i}
-          className={`bg-roll-table-row${highlightedRow === i ? " highlighted" : ""}`}
-        >
-          <span className="bg-table-index">{i + 1}</span>
-          <span>{entry}</span>
-        </div>
-      ))}
-    </div>
-  );
+  const renderDie = (value, locked, isStatic = false) => {
+    if (isStatic) {
+      return <div className="die-block locked bg-die">{value}</div>;
+    }
+    return (
+      <motion.div
+        className={`die-block ${locked ? "locked" : "spinning"} bg-die`}
+        animate={
+          locked
+            ? {
+                scale: [1, 1.25, 0.95, 1],
+                boxShadow: [
+                  "0 0 0px rgba(0,229,255,0)",
+                  "0 0 30px rgba(0,229,255,0.6)",
+                  "0 0 15px rgba(0,229,255,0.3)",
+                  "0 0 8px rgba(0,229,255,0.15)",
+                ],
+              }
+            : {}
+        }
+        transition={locked ? { duration: 0.5, ease: "easeOut" } : {}}
+      >
+        {value}
+      </motion.div>
+    );
+  };
 
   /* ================================================================
      RENDER
      ================================================================ */
+  const growthDisplay = getRollDisplayState("growth_roll", "growth");
+  const learn1Display = getRollDisplayState("learn1_roll", "learn1");
+  const learn2Display = getRollDisplayState("learn2_roll", "learn2");
+
+  const activeDieDisplay =
+    activeRollType === "growth" ? growthDisplay :
+    activeRollType === "learn1" ? learn1Display :
+    activeRollType === "learn2" ? learn2Display :
+    null;
+
+  const rollLabel =
+    activeRollType === "growth" ? "Growth Roll" :
+    activeRollType === "learn1" ? "Learning Roll (1/2)" :
+    activeRollType === "learn2" ? "Learning Roll (2/2)" :
+    "";
+
+  const rollDieType = activeRollType === "growth" ? "d6" : "d8";
+
+  /* highlight sets for card tables */
+  const growthHighlights = new Set();
+  if (phaseAtLeast("growth_roll") && growthDisplay.highlight >= 0) {
+    growthHighlights.add(growthDisplay.highlight);
+  }
+  const learningHighlights = new Set();
+  if (phaseAtLeast("learn1_roll") && learn1Display.highlight >= 0) {
+    learningHighlights.add(learn1Display.highlight);
+  }
+  if (phaseAtLeast("learn2_roll") && learn2Display.highlight >= 0) {
+    learningHighlights.add(learn2Display.highlight);
+  }
+
   return (
     <div className="bg-sequence">
-      <AnimatePresence mode="wait">
-        {/* ---- ELIMINATE / PICK (unified) ---- */}
-        {(phase === "eliminate" || phase === "pick") && (
-          <motion.div
-            key="bg-selection"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+      {/* ---- BACKGROUND CARDS (persist after confirmation) ---- */}
+      {(phase === "eliminate" || phase === "pick" || confirmedBg) && (
+        <motion.div
+          key="bg-selection"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <AnimatePresence>
+            {(bgPhase === "revealing" || bgPhase === "highlighting") && (
+              <motion.div
+                key="bg-pool-header"
+                className="bg-item-row bg-pool-header"
+                exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                transition={{ duration: 0.3 }}
+              >
+                <span>#</span>
+                <span>Background</span>
+                <span>Description</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="bg-pool-list">
             <AnimatePresence>
-              {(bgPhase === "revealing" || bgPhase === "highlighting") && (
-                <motion.div
-                  key="bg-pool-header"
-                  className="bg-item-row bg-pool-header"
-                  exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span>#</span>
-                  <span>Background</span>
-                  <span>Description</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {allBackgrounds
+                .filter((b) => !eliminatedNames.has(b.name))
+                .map((b) => {
+                  const isRevealed = revealedNames.has(b.name);
+                  const isRevealing = bgPhase === "revealing" || bgPhase === "highlighting";
+                  const isDimmed = isRevealing && !isRevealed;
+                  const showCyan = (isRevealing && isRevealed) || bgPhase === "expanding" || bgPhase === "pickable";
+                  const isConfirmed = confirmedBg === b.name;
+                  const isExpanded =
+                    bgPhase === "expanding" || bgPhase === "pickable" || isConfirmed;
+                  const isPickable = bgPhase === "pickable" && !confirmedBg;
+                  const isSelected = selectedBg === b.name;
+                  const bgIdx = allBackgrounds.indexOf(b) + 1;
+                  const offerIdx = offers
+                    ? offers.findIndex((o) => o.name === b.name)
+                    : -1;
 
-            <div className="bg-pool-list">
-              <AnimatePresence>
-                {allBackgrounds
-                  .filter((b) => !eliminatedNames.has(b.name))
-                  .map((b) => {
-                    const isRevealed = revealedNames.has(b.name);
-                    const isRevealing = bgPhase === "revealing" || bgPhase === "highlighting";
-                    const isDimmed = isRevealing && !isRevealed;
-                    const showCyan = (isRevealing && isRevealed) || bgPhase === "expanding" || bgPhase === "pickable";
-                    const isExpanded =
-                      bgPhase === "expanding" || bgPhase === "pickable";
-                    const isPickable = bgPhase === "pickable";
-                    const isSelected = selectedBg === b.name;
-                    const bgIdx = allBackgrounds.indexOf(b) + 1;
-                    const offerIdx = offers
-                      ? offers.findIndex((o) => o.name === b.name)
-                      : -1;
-
-                    return (
-                      <motion.div
-                        key={b.name}
-                        layout
-                        className={`bg-item${isExpanded ? " bg-item-expanded" : ""}${isPickable ? " bg-item-pickable" : ""}${isSelected ? " bg-item-selected" : ""}${isDimmed ? " bg-item-dimmed" : ""}`}
-                        animate={{
-                          backgroundColor: isSelected
-                            ? "rgba(255, 182, 39, 0.1)"
-                            : showCyan
-                              ? "rgba(0, 229, 255, 0.08)"
-                              : "rgba(0, 0, 0, 0)",
-                          borderColor: isSelected
-                            ? "rgba(255, 182, 39, 0.5)"
-                            : showCyan
-                              ? "rgba(0, 229, 255, 0.2)"
-                              : "rgba(255, 255, 255, 0.06)",
-                          opacity: isDimmed ? 0.3 : 1,
-                        }}
-                        exit={{
-                          opacity: 0,
-                          height: 0,
-                          marginBottom: 0,
-                          paddingTop: 0,
-                          paddingBottom: 0,
-                          overflow: "hidden",
-                        }}
-                        transition={{
-                          layout: { duration: 0.3, ease: "easeInOut" },
-                          backgroundColor: { duration: 0.4 },
-                          borderColor: { duration: 0.4 },
-                          opacity: { duration: 0.4 },
-                          default: { duration: 0.2 },
-                        }}
-                        onClick={isPickable ? () => setSelectedBg(b.name) : undefined}
-                      >
-                        {!isExpanded && (
-                          <div className="bg-item-row">
-                            <span
-                              className={`bg-pool-idx${showCyan ? " bg-highlighted" : ""}`}
-                            >
-                              {bgIdx}
-                            </span>
-                            <span
-                              className={`bg-pool-name${showCyan ? " bg-highlighted" : ""}`}
-                            >
-                              {b.name}
-                            </span>
-                            <span className="bg-pool-desc">{b.description}</span>
-                          </div>
-                        )}
-
-                        {isExpanded && (
-                          <motion.div
-                            className="bg-item-details"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5, delay: 0.15 }}
+                  return (
+                    <motion.div
+                      key={b.name}
+                      layout
+                      className={`bg-item${isExpanded ? " bg-item-expanded" : ""}${isPickable ? " bg-item-pickable" : ""}${isSelected ? " bg-item-selected" : ""}${isDimmed ? " bg-item-dimmed" : ""}`}
+                      animate={{
+                        backgroundColor: isSelected || isConfirmed
+                          ? "rgba(255, 182, 39, 0.1)"
+                          : showCyan
+                            ? "rgba(0, 229, 255, 0.08)"
+                            : "rgba(0, 0, 0, 0)",
+                        borderColor: isSelected || isConfirmed
+                          ? "rgba(255, 182, 39, 0.5)"
+                          : showCyan
+                            ? "rgba(0, 229, 255, 0.2)"
+                            : "rgba(255, 255, 255, 0.06)",
+                        opacity: isDimmed ? 0.3 : 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        height: 0,
+                        marginBottom: 0,
+                        paddingTop: 0,
+                        paddingBottom: 0,
+                        overflow: "hidden",
+                      }}
+                      transition={{
+                        layout: { duration: 0.3, ease: "easeInOut" },
+                        backgroundColor: { duration: 0.4 },
+                        borderColor: { duration: 0.4 },
+                        opacity: { duration: 0.4 },
+                        default: { duration: 0.2 },
+                      }}
+                      onClick={isPickable ? () => setSelectedBg(b.name) : undefined}
+                    >
+                      {!isExpanded && (
+                        <div className="bg-item-row">
+                          <span
+                            className={`bg-pool-idx${showCyan ? " bg-highlighted" : ""}`}
                           >
-                            {offerIdx >= 0 && (
-                              <span className="offer-card-id">
-                                #{String(offerIdx + 1).padStart(2, "0")}
-                              </span>
+                            {bgIdx}
+                          </span>
+                          <span
+                            className={`bg-pool-name${showCyan ? " bg-highlighted" : ""}`}
+                          >
+                            {b.name}
+                          </span>
+                          <span className="bg-pool-desc">{b.description}</span>
+                        </div>
+                      )}
+
+                      {isExpanded && (
+                        <motion.div
+                          className="bg-item-details"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.5, delay: 0.15 }}
+                          style={{ position: "relative" }}
+                        >
+                          {/* ---- Die area (top-right of card) ---- */}
+                          <AnimatePresence mode="wait">
+                            {isConfirmed && activeRollType && activeDieDisplay && (
+                              <motion.div
+                                key={activeRollType}
+                                className="bg-card-die-area"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.25 }}
+                              >
+                                <div className="bg-card-die-header">
+                                  <span className="bg-roll-label">{rollLabel}</span>
+                                  <span className="bg-roll-sub">{rollDieType}</span>
+                                </div>
+                                {renderDie(activeDieDisplay.dieValue, activeDieDisplay.locked, activeDieDisplay.isStatic)}
+                              </motion.div>
                             )}
-                            <h3>{b.name}</h3>
-                            <p className="offer-card-desc">{b.description}</p>
-                            <span className="offer-card-detail">
-                              Free skill: {b.free_skill}
+                          </AnimatePresence>
+
+                          {offerIdx >= 0 && (
+                            <span className="offer-card-id">
+                              #{String(offerIdx + 1).padStart(2, "0")}
                             </span>
-                            <div className="bg-table-section">
-                              <div className="bg-table">
-                                <div className="bg-table-title">Growth (d6)</div>
-                                {b.growth.map((entry, gi) => (
-                                  <div key={gi} className="bg-table-row">
-                                    <span className="bg-table-index">{gi + 1}</span>
-                                    <span>{entry}</span>
-                                  </div>
-                                ))}
+                          )}
+                          <h3>{b.name}</h3>
+                          <p className="offer-card-desc">{b.description}</p>
+                          <span className="offer-card-detail">
+                            Free skill: {b.free_skill}
+                          </span>
+
+                          {/* ---- Tables with roll highlights ---- */}
+                          <div className="bg-table-section">
+                            <div className="bg-table">
+                              <div className={`bg-table-title${isConfirmed && activeRollType === "growth" ? " bg-table-title-active" : ""}`}>
+                                Growth (d6)
                               </div>
-                              <div className="bg-table">
-                                <div className="bg-table-title">Learning (d8)</div>
-                                {b.learning.map((entry, li) => (
-                                  <div key={li} className="bg-table-row">
-                                    <span className="bg-table-index">{li + 1}</span>
-                                    <span>{entry}</span>
-                                  </div>
-                                ))}
-                              </div>
+                              {b.growth.map((entry, gi) => (
+                                <div
+                                  key={gi}
+                                  className={`bg-table-row${isConfirmed && growthHighlights.has(gi) ? " highlighted" : ""}`}
+                                >
+                                  <span className="bg-table-index">{gi + 1}</span>
+                                  <span>{entry}</span>
+                                </div>
+                              ))}
                             </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-              </AnimatePresence>
-            </div>
+                            <div className="bg-table">
+                              <div className={`bg-table-title${isConfirmed && (activeRollType === "learn1" || activeRollType === "learn2") ? " bg-table-title-active" : ""}`}>
+                                Learning (d8)
+                              </div>
+                              {b.learning.map((entry, li) => (
+                                <div
+                                  key={li}
+                                  className={`bg-table-row${isConfirmed && learningHighlights.has(li) ? " highlighted" : ""}`}
+                                >
+                                  <span className="bg-table-index">{li + 1}</span>
+                                  <span>{entry}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
 
-            <AnimatePresence>
-              {selectedBg && (
-                <motion.div
-                  key="bg-confirm"
-                  className="bg-confirm-wrap"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <button
-                    className="btn-action"
-                    onClick={() => handlePickBg(selectedBg)}
-                  >
-                    <span className="btn-prompt">&gt;_</span> Confirm {selectedBg}
-                  </button>
-                </motion.div>
-              )}
+                          {/* ---- Outcomes area ---- */}
+                          <AnimatePresence>
+                            {isConfirmed && (rollOutcomes.growth || rollOutcomes.learn1 || rollOutcomes.learn2) && (
+                              <motion.div
+                                key="outcomes"
+                                className="bg-card-outcomes"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                {rollOutcomes.growth && (
+                                  <motion.div
+                                    key="og"
+                                    className="bg-card-outcome-item"
+                                    initial={{ opacity: 0, x: -5 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                  >
+                                    <span className="bg-card-outcome-label">Growth:</span>
+                                    <span className="bg-roll-result-text">{rollOutcomes.growth}</span>
+                                  </motion.div>
+                                )}
+                                {rollOutcomes.learn1 && (
+                                  <motion.div
+                                    key="ol1"
+                                    className="bg-card-outcome-item"
+                                    initial={{ opacity: 0, x: -5 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                  >
+                                    <span className="bg-card-outcome-label">Learning 1:</span>
+                                    <span className="bg-roll-result-text">{rollOutcomes.learn1}</span>
+                                  </motion.div>
+                                )}
+                                {rollOutcomes.learn2 && (
+                                  <motion.div
+                                    key="ol2"
+                                    className="bg-card-outcome-item"
+                                    initial={{ opacity: 0, x: -5 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                  >
+                                    <span className="bg-card-outcome-label">Learning 2:</span>
+                                    <span className="bg-roll-result-text">{rollOutcomes.learn2}</span>
+                                  </motion.div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
             </AnimatePresence>
-          </motion.div>
-        )}
+          </div>
 
-        {/* ---- FREE SKILL RESOLVE ---- */}
+          <AnimatePresence>
+            {selectedBg && !confirmedBg && (
+              <motion.div
+                key="bg-confirm"
+                className="bg-confirm-wrap"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.25 }}
+              >
+                <button
+                  className="btn-action"
+                  onClick={() => handlePickBg(selectedBg)}
+                >
+                  <span className="btn-prompt">&gt;_</span> Confirm {selectedBg}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {/* ---- FREE SKILL RESOLVE ---- */}
+      <AnimatePresence>
         {phase === "free_skill_resolve" && pendingItems.length > 0 && (
           <motion.div
             key="free-skill"
@@ -697,29 +878,10 @@ export default function BackgroundSequence({ char, onComplete }) {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ---- GROWTH ROLL ---- */}
-        {phase === "growth_roll" && bgData && (
-          <motion.div
-            key="growth-roll"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-roll-section"
-          >
-            <div className="bg-roll-header">
-              <span className="bg-roll-label">Growth Roll</span>
-              <span className="bg-roll-sub">d6</span>
-            </div>
-            <div className="bg-roll-body">
-              {renderRollTable(bgData.growth)}
-              <div className="bg-roll-die-area">{renderDie()}</div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ---- GROWTH RESOLVE ---- */}
+      {/* ---- GROWTH RESOLVE (with confirm) ---- */}
+      <AnimatePresence>
         {phase === "growth_resolve" && (
           <motion.div
             key="growth-resolve"
@@ -730,36 +892,31 @@ export default function BackgroundSequence({ char, onComplete }) {
             className="bg-resolve-inline"
           >
             {renderGrowthResolver()}
+            <AnimatePresence>
+              {selectedResolveChoice && !splitMode && (
+                <motion.div
+                  key="confirm-growth"
+                  className="bg-confirm-wrap"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <button className="btn-action" onClick={handleConfirmResolve}>
+                    <span className="btn-prompt">&gt;_</span> Confirm {selectedResolveChoice}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ---- LEARNING ROLLS ---- */}
-        {(phase === "learn1_roll" || phase === "learn2_roll") && bgData && (
+      {/* ---- LEARNING 1 RESOLVE (with confirm) ---- */}
+      <AnimatePresence>
+        {phase === "learn1_resolve" && (
           <motion.div
-            key={phase}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-roll-section"
-          >
-            <div className="bg-roll-header">
-              <span className="bg-roll-label">
-                Learning Roll ({phase === "learn1_roll" ? "1" : "2"} of 2)
-              </span>
-              <span className="bg-roll-sub">d8</span>
-            </div>
-            <div className="bg-roll-body">
-              {renderRollTable(bgData.learning)}
-              <div className="bg-roll-die-area">{renderDie()}</div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ---- LEARNING RESOLVE ---- */}
-        {(phase === "learn1_resolve" || phase === "learn2_resolve") && (
-          <motion.div
-            key={phase}
+            key="learn1-resolve"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -767,48 +924,54 @@ export default function BackgroundSequence({ char, onComplete }) {
             className="bg-resolve-inline"
           >
             {renderLearningResolver()}
+            <AnimatePresence>
+              {selectedResolveChoice && (
+                <motion.div
+                  key="confirm-learn1"
+                  className="bg-confirm-wrap"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <button className="btn-action" onClick={handleConfirmResolve}>
+                    <span className="btn-prompt">&gt;_</span> Confirm {selectedResolveChoice}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ---- ROLL DONE (pause for user to read) ---- */}
-        {(phase === "growth_done" || phase === "learn1_done" || phase === "learn2_done") && bgData && (
+      {/* ---- LEARNING 2 RESOLVE (with confirm) ---- */}
+      <AnimatePresence>
+        {phase === "learn2_resolve" && (
           <motion.div
-            key={phase}
+            key="learn2-resolve"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-roll-section"
+            className="bg-resolve-inline"
           >
-            <div className="bg-roll-header">
-              <span className="bg-roll-label">
-                {phase === "growth_done"
-                  ? "Growth Roll"
-                  : `Learning Roll (${phase === "learn1_done" ? "1" : "2"} of 2)`}
-              </span>
-              <span className="bg-roll-sub">
-                {phase === "growth_done" ? "d6" : "d8"}
-              </span>
-            </div>
-            <div className="bg-roll-body">
-              {renderRollTable(
-                phase === "growth_done" ? bgData.growth : bgData.learning
+            {renderLearningResolver()}
+            <AnimatePresence>
+              {selectedResolveChoice && (
+                <motion.div
+                  key="confirm-learn2"
+                  className="bg-confirm-wrap"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <button className="btn-action" onClick={handleConfirmResolve}>
+                    <span className="btn-prompt">&gt;_</span> Confirm {selectedResolveChoice}
+                  </button>
+                </motion.div>
               )}
-              <div className="bg-roll-die-area">
-                <div className="die-block locked bg-die">
-                  {preRolls.current[
-                    phase === "growth_done" ? "growth" :
-                    phase === "learn1_done" ? "learn1" : "learn2"
-                  ]}
-                </div>
-              </div>
-            </div>
-            <div className="bg-roll-result">
-              <span className="bg-roll-result-text">{rollOutcome}</span>
-              <button className="btn-action" onClick={handleNextAfterRoll}>
-                <span className="btn-prompt">&gt;_</span> Continue
-              </button>
-            </div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

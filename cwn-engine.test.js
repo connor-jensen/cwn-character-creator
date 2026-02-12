@@ -24,11 +24,16 @@ import {
   offerFoci,
   rollDice,
   STARTING_WEAPONS,
+  STARTING_KNIFE,
   STARTING_ARMOR,
   equipStartingGear,
   edges,
   backgrounds,
   foci,
+  contactTables,
+  generateContact,
+  getContactAllotment,
+  addGeneratedContact,
 } from "./cwn-engine.js";
 
 // --- Data Loading ---
@@ -883,8 +888,8 @@ describe("offerFoci", () => {
 // --- Starting Gear ---
 
 describe("STARTING_WEAPONS", () => {
-  it("has 4 weapons", () => {
-    assert.equal(STARTING_WEAPONS.length, 4);
+  it("has 3 weapons (knife is separate)", () => {
+    assert.equal(STARTING_WEAPONS.length, 3);
   });
 
   it("each weapon has required fields", () => {
@@ -897,6 +902,14 @@ describe("STARTING_WEAPONS", () => {
       assert.ok(w.range);
       assert.ok(w.enc !== undefined);
     }
+  });
+});
+
+describe("STARTING_KNIFE", () => {
+  it("is a knife with required fields", () => {
+    assert.equal(STARTING_KNIFE.name, "Knife");
+    assert.equal(STARTING_KNIFE.category, "weapon");
+    assert.ok(STARTING_KNIFE.damage);
   });
 });
 
@@ -918,14 +931,16 @@ describe("STARTING_ARMOR", () => {
 });
 
 describe("equipStartingGear", () => {
-  it("adds weapon and armor to inventory", () => {
+  it("adds weapon, knife, and armor to inventory", () => {
     const c = createCharacter();
     equipStartingGear(c, "Light Pistol", "Melee");
-    assert.equal(c.inventory.length, 2);
+    assert.equal(c.inventory.length, 3);
     assert.equal(c.inventory[0].name, "Light Pistol");
     assert.equal(c.inventory[0].category, "weapon");
-    assert.equal(c.inventory[1].name, "Melee");
-    assert.equal(c.inventory[1].category, "armor");
+    assert.equal(c.inventory[1].name, "Knife");
+    assert.equal(c.inventory[1].category, "weapon");
+    assert.equal(c.inventory[2].name, "Melee");
+    assert.equal(c.inventory[2].category, "armor");
   });
 
   it("throws on unknown weapon name", () => {
@@ -939,7 +954,7 @@ describe("equipStartingGear", () => {
   it("throws on unknown armor name", () => {
     const c = createCharacter();
     assert.throws(
-      () => equipStartingGear(c, "Knife", "Power Armor"),
+      () => equipStartingGear(c, "Light Pistol", "Power Armor"),
       /Unknown starting armor/
     );
   });
@@ -948,15 +963,145 @@ describe("equipStartingGear", () => {
     const c = createCharacter();
     equipStartingGear(c, "Light Pistol", "Melee");
     equipStartingGear(c, "Rifle", "Ranged");
-    assert.equal(c.inventory.length, 2);
+    assert.equal(c.inventory.length, 3);
     assert.equal(c.inventory[0].name, "Rifle");
-    assert.equal(c.inventory[1].name, "Ranged");
+    assert.equal(c.inventory[1].name, "Knife");
+    assert.equal(c.inventory[2].name, "Ranged");
   });
 
   it("does not mutate source constants", () => {
     const c = createCharacter();
-    equipStartingGear(c, "Knife", "Balanced");
+    equipStartingGear(c, "Light Pistol", "Balanced");
     c.inventory[0].name = "MUTATED";
-    assert.equal(STARTING_WEAPONS[3].name, "Knife");
+    assert.equal(STARTING_WEAPONS[0].name, "Light Pistol");
+    assert.equal(STARTING_KNIFE.name, "Knife");
+  });
+});
+
+// --- Contact Tables ---
+
+describe("contactTables", () => {
+  it("loads socialCircles with 6 entries", () => {
+    assert.ok(Array.isArray(contactTables.socialCircles));
+    assert.equal(contactTables.socialCircles.length, 6);
+  });
+
+  it("loads howWellKnown with 4 entries", () => {
+    assert.ok(Array.isArray(contactTables.howWellKnown));
+    assert.equal(contactTables.howWellKnown.length, 4);
+  });
+
+  it("loads howMet with 12 entries", () => {
+    assert.ok(Array.isArray(contactTables.howMet));
+    assert.equal(contactTables.howMet.length, 12);
+  });
+
+  it("loads lastInteraction with 8 entries", () => {
+    assert.ok(Array.isArray(contactTables.lastInteraction));
+    assert.equal(contactTables.lastInteraction.length, 8);
+  });
+
+  it("loads whatTheyGet with 10 entries", () => {
+    assert.ok(Array.isArray(contactTables.whatTheyGet));
+    assert.equal(contactTables.whatTheyGet.length, 10);
+  });
+
+  it("loads whatTheyCanDoForYou with 20 entries", () => {
+    assert.ok(Array.isArray(contactTables.whatTheyCanDoForYou));
+    assert.equal(contactTables.whatTheyCanDoForYou.length, 20);
+  });
+});
+
+describe("generateContact", () => {
+  it("returns 1 whatTheyCanDoForYou entry for acquaintance", () => {
+    const c = generateContact("acquaintance");
+    assert.equal(c.relationship, "acquaintance");
+    assert.equal(c.whatTheyCanDoForYou.length, 1);
+    assert.equal(c.rolls.whatTheyCanDoForYou.length, 1);
+  });
+
+  it("returns 2 whatTheyCanDoForYou entries for friend", () => {
+    const c = generateContact("friend");
+    assert.equal(c.relationship, "friend");
+    assert.equal(c.whatTheyCanDoForYou.length, 2);
+    assert.equal(c.rolls.whatTheyCanDoForYou.length, 2);
+  });
+
+  it("has all required fields", () => {
+    const c = generateContact("friend");
+    assert.equal(c.name, "");
+    assert.ok(c.socialCircle);
+    assert.ok(c.howWellKnown);
+    assert.ok(c.howMet);
+    assert.ok(c.lastInteraction);
+    assert.ok(c.whatTheyGet);
+    assert.ok(c.rolls.socialCircle);
+    assert.ok(c.rolls.howWellKnown);
+    assert.ok(c.rolls.howMet);
+    assert.ok(c.rolls.lastInteraction);
+    assert.ok(c.rolls.whatTheyGet);
+  });
+
+  it("produces roll values within valid ranges (50 runs)", () => {
+    for (let i = 0; i < 50; i++) {
+      const c = generateContact("friend");
+      assert.ok(c.rolls.socialCircle >= 1 && c.rolls.socialCircle <= 6);
+      assert.ok(c.rolls.howWellKnown >= 1 && c.rolls.howWellKnown <= 4);
+      assert.ok(c.rolls.howMet >= 1 && c.rolls.howMet <= 12);
+      assert.ok(c.rolls.lastInteraction >= 1 && c.rolls.lastInteraction <= 8);
+      assert.ok(c.rolls.whatTheyGet >= 1 && c.rolls.whatTheyGet <= 10);
+      for (const r of c.rolls.whatTheyCanDoForYou) {
+        assert.ok(r >= 1 && r <= 20, `d20 roll out of range: ${r}`);
+      }
+    }
+  });
+});
+
+describe("getContactAllotment", () => {
+  it("returns empty array for CHA mod -2", () => {
+    assert.deepEqual(getContactAllotment(-2), []);
+  });
+
+  it("returns 1 acquaintance for CHA mod -1", () => {
+    assert.deepEqual(getContactAllotment(-1), ["acquaintance"]);
+  });
+
+  it("returns 2 acquaintances or 1 friend for CHA mod 0", () => {
+    const seen = new Set();
+    for (let i = 0; i < 100; i++) {
+      const result = getContactAllotment(0);
+      const key = result.join(",");
+      seen.add(key);
+      assert.ok(
+        key === "acquaintance,acquaintance" || key === "friend",
+        `Unexpected allotment for mod 0: ${key}`
+      );
+    }
+    assert.equal(seen.size, 2, "Should see both outcomes for mod 0");
+  });
+
+  it("returns friend + acquaintance for CHA mod +1", () => {
+    assert.deepEqual(getContactAllotment(1), ["friend", "acquaintance"]);
+  });
+
+  it("returns 2 friends for CHA mod +2", () => {
+    assert.deepEqual(getContactAllotment(2), ["friend", "friend"]);
+  });
+});
+
+describe("addGeneratedContact", () => {
+  it("pushes contact to char.contacts", () => {
+    const c = createCharacter();
+    const contact = generateContact("friend");
+    addGeneratedContact(c, contact);
+    assert.equal(c.contacts.length, 1);
+    assert.equal(c.contacts[0].relationship, "friend");
+  });
+
+  it("returns char for chaining", () => {
+    const c = createCharacter();
+    const contact = generateContact("acquaintance");
+    const result = addGeneratedContact(c, contact);
+    assert.equal(result, c);
   });
 });

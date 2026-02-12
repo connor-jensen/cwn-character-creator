@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { rollDie } from "../../cwn-engine.js";
+import { ROLL_STEP } from "./timing.js";
 
 const ATTR_NAMES = [
   "strength", "dexterity", "constitution",
@@ -29,11 +30,11 @@ function fmtMod(m) { return m >= 0 ? `+${m}` : `${m}`; }
 const MAX_SCORE = 18;
 const BUMP_TARGET = 14;
 
-const T_LOCK1 = 4000 / 2;
-const T_LOCK2 = 7000 / 2;
-const T_LOCK3 = 10000 / 2;
-const T_SETTLE = 13000 / 2;
-const T_NEXT = 14000 / 2;
+const T_LOCK1 = ROLL_STEP + 500;
+const T_LOCK2 = T_LOCK1 + ROLL_STEP;
+const T_LOCK3 = T_LOCK2 + ROLL_STEP;
+const T_SETTLE = T_LOCK3 + ROLL_STEP;
+const T_NEXT = T_SETTLE + 500;
 
 export default function DiceRollSequence({ onComplete }) {
   const rolls = useRef(null);
@@ -113,8 +114,6 @@ export default function DiceRollSequence({ onComplete }) {
     return "var(--cyan)";
   };
 
-  const allDone = activeAttr >= ATTR_NAMES.length;
-
   return (
     <div className="dice-sequence">
       {/* Selection prompt */}
@@ -138,136 +137,70 @@ export default function DiceRollSequence({ onComplete }) {
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="popLayout">
-        {/* Completed rows */}
-        {rolls.current.slice(0, allDone ? ATTR_NAMES.length : activeAttr).map((dice, i) => {
-          const total = dice[0] + dice[1] + dice[2];
-          const mod = scoreMod(total);
-          const modClass = mod > 0 ? "positive" : mod < 0 ? "negative" : "neutral";
-          const name = ATTR_NAMES[i];
-          const isHovered = selectable && hoveredAttr === name && selectedAttr !== name;
-          const isSelected = selectedAttr === name;
-          const isNotSelected = selectedAttr !== null && selectedAttr !== name && hoveredAttr !== name;
-          const wouldChange = total < BUMP_TARGET;
-          const showPreview = (isHovered || isSelected) && wouldChange;
-          const displayScore = showPreview ? BUMP_TARGET : total;
-          const displayMod = scoreMod(displayScore);
-          const displayModClass = displayMod > 0 ? "positive" : displayMod < 0 ? "negative" : "neutral";
+      {/* Attribute rows — single element per attribute, transitions in place */}
+      {ATTR_NAMES.slice(0, Math.min(activeAttr + 1, ATTR_NAMES.length)).map((name, i) => {
+        const isRolling = i === activeAttr && activeAttr < ATTR_NAMES.length;
+        const isDone = !isRolling;
+        const dice = rolls.current[i];
+        const total = dice[0] + dice[1] + dice[2];
+        const mod = scoreMod(total);
+        const rowLocked = isDone ? 3 : lockedCount;
+        const runningScore = getRunningScore(i, rowLocked);
 
-          return (
-            <motion.div
-              key={name}
-              className={[
-                "dice-row-container done",
-                selectable && "selectable",
-                isHovered && "hovered",
-                isSelected && "selected",
-                isNotSelected && "dimmed",
-              ].filter(Boolean).join(" ")}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: isNotSelected ? 0.55 : 1, height: "auto" }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              layout
-              onClick={selectable ? () => handleSelect(name) : undefined}
-              onMouseEnter={selectable ? () => setHoveredAttr(name) : undefined}
-              onMouseLeave={selectable ? () => setHoveredAttr(null) : undefined}
-              role={selectable ? "button" : undefined}
-              tabIndex={selectable ? 0 : undefined}
-              onKeyDown={selectable ? (e) => {
-                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(name); }
-              } : undefined}
-            >
-              <div className="dice-row-inner">
-                <span className={`dice-row-label ${isHovered || isSelected ? "gold-label" : ""}`}>
-                  {ATTR_LABELS[i]}
-                </span>
-                <div className="dice-row-dice">
-                  {dice.map((v, di) => (
-                    <div key={di} className="die-block locked mini">{v}</div>
-                  ))}
-                </div>
-                <div className="dice-row-meter-wrap">
-                  <div className="dice-row-meter-track">
-                    {selectable && wouldChange && (
-                      <motion.div
-                        className="dice-row-meter-preview"
-                        initial={{ width: `${(total / MAX_SCORE) * 100}%`, opacity: 0 }}
-                        animate={{
-                          width: isHovered || isSelected
-                            ? `${(BUMP_TARGET / MAX_SCORE) * 100}%`
-                            : `${(total / MAX_SCORE) * 100}%`,
-                          opacity: isHovered || isSelected ? 1 : 0,
-                        }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                      />
-                    )}
-                    <motion.div
-                      className="dice-row-meter-fill"
-                      initial={false}
-                      animate={{
-                        width: isSelected && wouldChange
-                          ? `${(BUMP_TARGET / MAX_SCORE) * 100}%`
-                          : `${(total / MAX_SCORE) * 100}%`,
-                        backgroundColor: isSelected && wouldChange
-                          ? getMeterColor(BUMP_TARGET, 3)
-                          : getMeterColor(total, 3),
-                      }}
-                      transition={{
-                        duration: isSelected ? 0.6 : 0.5,
-                        delay: isSelected ? 0.2 : 0,
-                      }}
-                    />
-                  </div>
-                </div>
-                <span className={`dice-row-score ${showPreview ? "score-gold" : ""}`}>
-                  {displayScore}
-                </span>
-                <span className={`dice-row-mod ${showPreview ? "gold-mod" : displayModClass}`}>
-                  {fmtMod(displayMod)}
-                </span>
-              </div>
-              <p className="dice-row-desc">{ATTR_DESC[name]}</p>
-              {selectable && (
-                <motion.div
-                  className="dice-row-gold-edge"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: isHovered || isSelected ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </motion.div>
-          );
-        })}
+        // Selection-phase states
+        const isHovered = selectable && hoveredAttr === name && selectedAttr !== name;
+        const isSelected = selectedAttr === name;
+        const isNotSelected = selectedAttr !== null && selectedAttr !== name && hoveredAttr !== name;
+        const wouldChange = total < BUMP_TARGET;
+        const showPreview = isDone && (isHovered || isSelected) && wouldChange;
+        const displayScore = showPreview ? BUMP_TARGET : total;
+        const displayMod = scoreMod(displayScore);
+        const displayModClass = displayMod > 0 ? "positive" : displayMod < 0 ? "negative" : "neutral";
 
-        {/* Active rolling row */}
-        {activeAttr < ATTR_NAMES.length && (
+        return (
           <motion.div
-            key={`active-${activeAttr}`}
-            className={`dice-row-container active ${settled ? "settled" : ""}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            layout
+            key={name}
+            className={[
+              "dice-row-container",
+              isRolling ? "active" : "done",
+              isRolling && settled && "settled",
+              isDone && selectable && "selectable",
+              isDone && isHovered && "hovered",
+              isDone && isSelected && "selected",
+              isDone && isNotSelected && "dimmed",
+            ].filter(Boolean).join(" ")}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isDone && isNotSelected ? 0.55 : 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            onClick={selectable ? () => handleSelect(name) : undefined}
+            onMouseEnter={selectable ? () => setHoveredAttr(name) : undefined}
+            onMouseLeave={selectable ? () => setHoveredAttr(null) : undefined}
+            role={selectable ? "button" : undefined}
+            tabIndex={selectable ? 0 : undefined}
+            onKeyDown={selectable ? (e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(name); }
+            } : undefined}
           >
             <div className="dice-row-inner">
+              {/* Label */}
               <motion.span
-                className="dice-row-label active-label"
+                className={`dice-row-label ${isRolling ? "active-label" : ""} ${(isHovered || isSelected) ? "gold-label" : ""}`}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {ATTR_LABELS[activeAttr]}
+                {ATTR_LABELS[i]}
               </motion.span>
 
+              {/* Dice */}
               <div className="dice-row-dice">
                 {[0, 1, 2].map((di) => {
-                  const isLocked = di < lockedCount;
-                  const dice = rolls.current[activeAttr];
+                  const isLocked = di < rowLocked;
                   return (
                     <motion.div
                       key={di}
-                      className={`die-block ${isLocked ? "locked" : "spinning"}`}
-                      animate={isLocked ? {
+                      className={`die-block ${isLocked || isDone ? "locked" : "spinning"} ${isDone ? "mini" : ""}`}
+                      animate={isRolling && isLocked ? {
                         scale: [1, 1.25, 0.95, 1],
                         boxShadow: [
                           "0 0 0px rgba(0,229,255,0)",
@@ -276,24 +209,51 @@ export default function DiceRollSequence({ onComplete }) {
                           "0 0 8px rgba(0,229,255,0.15)",
                         ],
                       } : {}}
-                      transition={isLocked ? { duration: 0.5, ease: "easeOut" } : {}}
+                      transition={isRolling && isLocked ? { duration: 0.5, ease: "easeOut" } : {}}
                     >
-                      {isLocked ? dice[di] : spinValues[di]}
+                      {isLocked || isDone ? dice[di] : spinValues[di]}
                     </motion.div>
                   );
                 })}
               </div>
 
+              {/* Meter */}
               <div className="dice-row-meter-wrap">
                 <div className="dice-row-meter-track">
+                  {isDone && selectable && wouldChange && (
+                    <motion.div
+                      className="dice-row-meter-preview"
+                      initial={{ width: `${(total / MAX_SCORE) * 100}%`, opacity: 0 }}
+                      animate={{
+                        width: isHovered || isSelected
+                          ? `${(BUMP_TARGET / MAX_SCORE) * 100}%`
+                          : `${(total / MAX_SCORE) * 100}%`,
+                        opacity: isHovered || isSelected ? 1 : 0,
+                      }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                    />
+                  )}
                   <motion.div
                     className="dice-row-meter-fill"
-                    style={{ backgroundColor: getMeterColor(getRunningScore(activeAttr, lockedCount), lockedCount) }}
+                    style={isRolling ? { backgroundColor: getMeterColor(runningScore, rowLocked) } : undefined}
                     initial={{ width: "0%" }}
-                    animate={{ width: `${(getRunningScore(activeAttr, lockedCount) / MAX_SCORE) * 100}%` }}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    animate={{
+                      width: isDone && isSelected && wouldChange
+                        ? `${(BUMP_TARGET / MAX_SCORE) * 100}%`
+                        : `${(runningScore / MAX_SCORE) * 100}%`,
+                      ...(isDone ? {
+                        backgroundColor: isSelected && wouldChange
+                          ? getMeterColor(BUMP_TARGET, 3)
+                          : getMeterColor(total, 3),
+                      } : {}),
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      delay: isDone && isSelected ? 0.2 : 0,
+                      ease: isRolling ? [0.16, 1, 0.3, 1] : "easeOut",
+                    }}
                   />
-                  {lockedCount < 3 && (
+                  {isRolling && rowLocked < 3 && (
                     <motion.div
                       className="dice-row-meter-shimmer"
                       animate={{ x: ["-100%", "200%"] }}
@@ -303,43 +263,65 @@ export default function DiceRollSequence({ onComplete }) {
                 </div>
               </div>
 
+              {/* Score — key includes rowLocked so spring re-triggers on each die lock */}
               <motion.span
-                className="dice-row-score"
-                key={`score-${lockedCount}`}
+                className={`dice-row-score ${showPreview ? "score-gold" : ""}`}
+                key={`score-${i}-${rowLocked}`}
                 initial={{ scale: 1.4, opacity: 0 }}
-                animate={{ scale: 1, opacity: lockedCount > 0 ? 1 : 0.3 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                animate={{ scale: 1, opacity: rowLocked > 0 ? 1 : 0.3 }}
+                transition={isRolling
+                  ? { type: "spring", stiffness: 300, damping: 20 }
+                  : { duration: 0.3 }}
               >
-                {lockedCount > 0 ? getRunningScore(activeAttr, lockedCount) : "\u2014"}
+                {rowLocked > 0
+                  ? (isDone ? displayScore : runningScore)
+                  : "\u2014"}
               </motion.span>
 
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`mod-${lockedCount}`}
-                  className={`dice-row-mod ${lockedCount === 3
-                    ? (scoreMod(getRunningScore(activeAttr, 3)) > 0 ? "positive" : scoreMod(getRunningScore(activeAttr, 3)) < 0 ? "negative" : "neutral")
-                    : "pending"}`}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: lockedCount > 0 ? 1 : 0.3 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                >
-                  {lockedCount > 0
-                    ? fmtMod(scoreMod(getRunningScore(activeAttr, lockedCount)))
-                    : "\u2014"}
-                </motion.span>
-              </AnimatePresence>
+              {/* Mod */}
+              <motion.span
+                key={`mod-${i}-${rowLocked}`}
+                className={`dice-row-mod ${
+                  isDone
+                    ? (showPreview ? "gold-mod" : displayModClass)
+                    : (rowLocked === 3
+                      ? (scoreMod(runningScore) > 0 ? "positive" : scoreMod(runningScore) < 0 ? "negative" : "neutral")
+                      : "pending")
+                }`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: rowLocked > 0 ? 1 : 0.3 }}
+                transition={isRolling
+                  ? { type: "spring", stiffness: 400, damping: 25 }
+                  : { duration: 0.3 }}
+              >
+                {rowLocked > 0
+                  ? fmtMod(isDone ? displayMod : scoreMod(runningScore))
+                  : "\u2014"}
+              </motion.span>
             </div>
+
+            {/* Description */}
             <motion.p
               className="dice-row-desc"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              {ATTR_DESC[ATTR_NAMES[activeAttr]]}
+              {ATTR_DESC[name]}
             </motion.p>
+
+            {/* Gold edge for selectable */}
+            {isDone && selectable && (
+              <motion.div
+                className="dice-row-gold-edge"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: isHovered || isSelected ? 1 : 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        );
+      })}
 
       {/* Confirm button */}
       <AnimatePresence>
