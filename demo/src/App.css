@@ -784,6 +784,52 @@
   font-family: var(--font-mono);
 }
 
+/* ===== Roll Mode Toggle ===== */
+
+.roll-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.roll-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.roll-mode-btn:hover {
+  border-color: var(--cyan-50);
+  color: var(--text-primary);
+}
+
+.roll-mode-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-10);
+  box-shadow: 0 0 15px var(--cyan-10);
+}
+
+.roll-mode-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
 /* ===== Dice Roll Sequence ===== */
 
 @keyframes dieSpin {
@@ -1059,12 +1105,159 @@
   text-shadow: 0 0 15px var(--amber-50);
 }
 
+/* d12 die block (slightly wider for two digits) */
+.die-block.die-d12 {
+  width: 44px;
+}
+
+.die-block.die-d12.mini {
+  width: 34px;
+}
+
+/* Bonus target highlight on attribute row */
+.dice-row-container.done.bonus-target {
+  border-left-color: var(--green);
+  background: rgba(57, 255, 20, 0.04);
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.bonus-label {
+  color: var(--green) !important;
+  text-shadow: 0 0 12px var(--green-50);
+}
+
+.score-bonus {
+  color: var(--green) !important;
+  text-shadow: 0 0 8px var(--green-50);
+}
+
+/* Bonus rolls section */
+.dice-bonus-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dice-bonus-prompt-text {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+  text-shadow: 0 0 15px var(--green-50);
+}
+
+/* Bonus roll row */
+.bonus-roll-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: var(--bg-deep);
+  border-left: 2px solid var(--border);
+}
+
+.bonus-roll-row.active {
+  border-left-color: var(--cyan-50);
+}
+
+.bonus-roll-row.done {
+  border-left-color: var(--green);
+}
+
+.bonus-roll-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  min-width: 1.5rem;
+}
+
+.bonus-roll-dice {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Rerolled dice (struck-through, dimmed) */
+.die-block.rerolled {
+  opacity: 0.35;
+  text-decoration: line-through;
+  border-color: var(--border);
+  background: var(--bg-deep);
+  color: var(--text-muted);
+}
+
+/* Bonus roll result */
+.bonus-roll-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bonus-roll-arrow {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.bonus-roll-attr {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--green);
+  letter-spacing: 0.1em;
+}
+
+.bonus-roll-plus {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-50);
+}
+
 /* Confirm button */
 .dice-confirm-wrap {
   display: flex;
   justify-content: center;
   margin-top: 1.25rem;
 }
+
+/* Lock animation for lowest attribute */
+@keyframes lockFlash {
+  0% {
+    border-left-color: var(--border);
+    box-shadow: none;
+    background: var(--bg-deep);
+  }
+  25% {
+    box-shadow: 0 0 30px var(--magenta-20), inset 0 0 20px var(--magenta-10);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--magenta-20);
+  }
+  100% {
+    border-left-color: var(--magenta);
+    box-shadow: 0 0 10px var(--magenta-10);
+    background: var(--magenta-10);
+  }
+}
+
+.dice-row-container.done.locked-lowest {
+  animation: lockFlash 0.8s ease-out forwards;
+  border-left: 2px solid var(--magenta);
+}
+
+.locked-label {
+  color: var(--magenta) !important;
+  text-shadow: 0 0 12px var(--magenta-50);
+}
+
 
 /* ===== Background Sequence ===== */
 
@@ -1549,6 +1742,77 @@
   color: var(--amber);
 }
 
+.gear-stat-conceal-hideable {
+  color: var(--green) !important;
+}
+
+.gear-stat-conceal-subtle {
+  color: var(--amber) !important;
+}
+
+.gear-stat-conceal-obvious {
+  color: var(--magenta) !important;
+}
+
+/* Specialty Items */
+
+.gear-specialty-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-dim);
+}
+
+.gear-specialty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.gear-card-category {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
+  background: var(--cyan-10);
+  margin-bottom: 0.25rem;
+  width: fit-content;
+}
+
+.gear-card-selected .gear-card-category {
+  color: var(--amber);
+  border-color: rgba(255, 182, 39, 0.2);
+  background: rgba(255, 182, 39, 0.1);
+}
+
+.gear-prereq-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.gear-prereq-pill {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  padding: 0.1rem 0.35rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-muted);
+}
+
+.gear-specialty-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
 .gear-confirm-wrap {
   display: flex;
   justify-content: center;
@@ -1605,6 +1869,147 @@
   color: var(--text-primary);
 }
 
+.sheet-gear-pill-conceal-hideable {
+  color: var(--green);
+  border-color: rgba(57, 255, 20, 0.2);
+}
+
+.sheet-gear-pill-conceal-subtle {
+  color: var(--amber);
+  border-color: rgba(255, 182, 39, 0.2);
+}
+
+.sheet-gear-pill-conceal-obvious {
+  color: var(--magenta);
+  border-color: rgba(255, 50, 100, 0.2);
+}
+
+/* ===== Cyberware Package Selection ===== */
+
+.cyber-package-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.cyber-package-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 1.25rem;
+  padding-bottom: 2.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cyber-package-card::after {
+  content: 'SELECT';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--bg-deep);
+  background: var(--cyan);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.cyber-package-card:hover {
+  border-color: var(--cyan-50);
+  box-shadow: 0 0 20px var(--cyan-10), 0 4px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.cyber-package-card:hover::after {
+  transform: translateY(0);
+}
+
+.cyber-package-card h3 {
+  font-size: 1rem;
+  color: var(--text-bright);
+  margin: 0 0 0.5rem;
+}
+
+.cyber-package-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+
+.cyber-package-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cyber-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0.5rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+
+.cyber-item-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.cyber-item-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.cyber-item-stats {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  margin-top: 0.15rem;
+}
+
+.cyber-package-totals {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-dim);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--amber);
+}
+
+/* Sidebar Cyberware */
+
+.sheet-cyber-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sheet-cyber-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {
@@ -1630,6 +2035,10 @@
   .gear-columns {
     flex-direction: column;
     gap: 1.5rem;
+  }
+
+  .gear-specialty-grid {
+    grid-template-columns: 1fr;
   }
 
   .header h1 {
@@ -1726,6 +2135,74 @@
   margin: 0;
 }
 
+.char-name-input-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.char-name-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.char-name-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.char-name-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.char-name-input:focus {
+  border-color: var(--cyan);
+}
+
+.contact-name-input-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.contact-name-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.contact-name-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.contact-name-input:focus {
+  border-color: var(--cyan);
+}
+
 .contact-detail-list {
   display: flex;
   flex-direction: column;
@@ -1765,8 +2242,171 @@
   font-weight: 600;
 }
 
+/* Ability Pool (d20 table) */
+
 .contact-confirm-wrap {
   display: flex;
   justify-content: center;
   margin-top: 1.25rem;
+}
+
+/* ===== Character Dossier ===== */
+
+.dossier {
+  padding: 1.5rem;
+}
+
+.dossier-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dossier-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem;
+  text-shadow: 0 0 30px var(--cyan-20);
+}
+
+.dossier-bg {
+  margin-top: 0.5rem;
+}
+
+.dossier-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.dossier-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.dossier-section-first {
+  margin-top: 0;
+}
+
+.dossier-combat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.dossier-inline-row {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.dossier-inline-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.dossier-inline-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dossier-inline-value {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.dossier-armor-name {
+  font-size: 0.85rem;
+  color: var(--amber);
+  margin-bottom: 0.4rem;
+}
+
+/* Weapon Table */
+
+.dossier-table-wrap {
+  overflow-x: auto;
+}
+
+.dossier-weapon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.dossier-weapon-table th {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.dossier-weapon-table td {
+  padding: 0.35rem 0.5rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dossier-weapon-table tbody tr:nth-child(even) {
+  background: var(--bg-deep);
+}
+
+.dossier-weapon-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+
+.dossier-weapon-hit {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+/* Specialty blocks in dossier */
+
+.dossier-specialty-block {
+  padding: 0.5rem 0;
+}
+
+.dossier-specialty-block .sheet-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 0.15rem;
+  display: block;
+}
+
+.dossier-specialty-block .sheet-gear-stats {
+  margin-top: 0.35rem;
+}
+
+/* Responsive dossier */
+
+@media (max-width: 768px) {
+  .dossier-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dossier-combat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dossier {
+    padding: 1rem;
+  }
 }

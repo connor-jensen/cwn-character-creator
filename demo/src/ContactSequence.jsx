@@ -9,8 +9,11 @@ const DETAIL_ROWS = [
   { key: "whatTheyGet", label: "What They Get From You" },
 ];
 
+/* ---- Main ContactSequence ---- */
+
 export default function ContactSequence({ contacts, onComplete }) {
   const [revealedCount, setRevealedCount] = useState(0);
+  const [names, setNames] = useState(() => contacts.map(() => ""));
 
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
@@ -25,6 +28,15 @@ export default function ContactSequence({ contacts, onComplete }) {
   }, [revealedCount, contacts.length]);
 
   const allRevealed = revealedCount >= contacts.length;
+  const allNamed = names.every((n) => n.trim().length > 0);
+
+  const setName = (idx, value) => {
+    setNames((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
+  };
 
   const friendCount = contacts.filter((c) => c.relationship === "friend").length;
   const acquaintanceCount = contacts.filter((c) => c.relationship === "acquaintance").length;
@@ -45,6 +57,7 @@ export default function ContactSequence({ contacts, onComplete }) {
     <div className="contact-sequence">
       <p className="step-desc">
         Your charisma has attracted {contacts.length} starting contact{contacts.length > 1 ? "s" : ""}.
+        Contacts are NPCs you can call on once per session for help, but they won&apos;t come on missions with you.
       </p>
 
       {contacts.slice(0, revealedCount).map((contact, idx) => (
@@ -62,6 +75,17 @@ export default function ContactSequence({ contacts, onComplete }) {
             <h3 className="contact-label">{getContactLabel(contact, idx)}</h3>
           </div>
 
+          <div className="contact-name-input-wrap">
+            <input
+              className="contact-name-input"
+              type="text"
+              placeholder="Enter contact name..."
+              value={names[idx]}
+              onChange={(e) => setName(idx, e.target.value)}
+              autoFocus={idx === revealedCount - 1}
+            />
+          </div>
+
           <div className="contact-detail-list">
             {DETAIL_ROWS.map((row, ri) => (
               <motion.div
@@ -76,34 +100,36 @@ export default function ContactSequence({ contacts, onComplete }) {
               </motion.div>
             ))}
 
-            {contact.whatTheyCanDoForYou.map((ability, ai) => (
-              <motion.div
-                key={`do-${ai}`}
-                className="contact-detail-row contact-detail-highlight"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: (DETAIL_ROWS.length + ai) * 0.08 }}
-              >
-                <span className="contact-detail-label">
-                  {contact.whatTheyCanDoForYou.length > 1 ? `What They Do (${ai + 1})` : "What They Do"}
-                </span>
-                <span className="contact-detail-value">{ability}</span>
-              </motion.div>
-            ))}
+            {/* What they can do — just show the resolved abilities */}
+            <motion.div
+              className="contact-detail-row"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: DETAIL_ROWS.length * 0.08 }}
+            >
+              <span className="contact-detail-label">What They Can Do</span>
+              <span className="contact-detail-value">
+                {contact.whatTheyCanDoForYou.join("; ")}
+              </span>
+            </motion.div>
           </div>
         </motion.div>
       ))}
 
-      {/* Confirm button after all contacts revealed */}
+      {/* Confirm button after all contacts revealed and named */}
       <AnimatePresence>
         {allRevealed && (
           <motion.div
             className="contact-confirm-wrap"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <button className="btn-action" onClick={() => onCompleteRef.current()}>
+            <button
+              className="btn-action"
+              disabled={!allNamed}
+              onClick={() => onCompleteRef.current(names)}
+            >
               <span className="btn-prompt">&gt;_</span> Confirm Contacts
             </button>
           </motion.div>

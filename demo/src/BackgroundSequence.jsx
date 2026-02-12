@@ -26,6 +26,7 @@ const PHASE_ORDER = [
   "growth_roll", "growth_resolve", "growth_done",
   "learn1_roll", "learn1_resolve", "learn1_done",
   "learn2_roll", "learn2_resolve", "learn2_done",
+  "confirm",
 ];
 
 function deepClone(obj) {
@@ -268,7 +269,7 @@ export default function BackgroundSequence({ char, onComplete }) {
       return () => clearTimeout(timer);
     }
     if (phase === "learn2_done") {
-      const timer = setTimeout(() => onCompleteRef.current(wcRef.current), 1000);
+      const timer = setTimeout(() => setPhase("confirm"), 1000);
       return () => clearTimeout(timer);
     }
   }, [phase]);
@@ -972,6 +973,27 @@ export default function BackgroundSequence({ char, onComplete }) {
                 </motion.div>
               )}
             </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ---- CONFIRM BACKGROUND (after all rolls done) ---- */}
+      <AnimatePresence>
+        {phase === "confirm" && (
+          <motion.div
+            key="bg-final-confirm"
+            className="bg-confirm-wrap"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.4 }}
+          >
+            <button
+              className="btn-action"
+              onClick={() => onCompleteRef.current(wcRef.current)}
+            >
+              <span className="btn-prompt">&gt;_</span> Confirm Background
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

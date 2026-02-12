@@ -9,6 +9,7 @@ export default function SelectionSequence({
   renderCardContent,
   onComplete,
   poolLabel,
+  showPoolDescription = true,
 }) {
   const [phase, setPhase] = useState("revealing");
   const [revealedNames, setRevealedNames] = useState(new Set());
@@ -91,7 +92,7 @@ export default function SelectionSequence({
             >
               <span>#</span>
               <span>{poolLabel || "Name"}</span>
-              <span>Description</span>
+              {showPoolDescription && <span>Description</span>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -168,9 +169,11 @@ export default function SelectionSequence({
                         >
                           {item.name}
                         </span>
-                        <span className="bg-pool-desc">
-                          {item.description}
-                        </span>
+                        {showPoolDescription && (
+                          <span className="bg-pool-desc">
+                            {item.description}
+                          </span>
+                        )}
                       </div>
                     )}
 

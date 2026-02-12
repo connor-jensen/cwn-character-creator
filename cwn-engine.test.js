@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   createCharacter,
   rollAttributes,
+  rollAttributesHighVariance,
   updateModifiers,
   setStatToFourteen,
   applyBackground,
@@ -27,6 +28,9 @@ import {
   STARTING_KNIFE,
   STARTING_ARMOR,
   equipStartingGear,
+  SPECIALTY_ITEMS,
+  getAvailableSpecialtyItems,
+  equipSpecialtyItem,
   edges,
   backgrounds,
   foci,
@@ -34,6 +38,7 @@ import {
   generateContact,
   getContactAllotment,
   addGeneratedContact,
+  cyberwarePackages,
 } from "./cwn-engine.js";
 
 // --- Data Loading ---
@@ -41,7 +46,7 @@ import {
 describe("Data loading", () => {
   it("loads edges from JSON", () => {
     assert.ok(Array.isArray(edges));
-    assert.equal(edges.length, 14);
+    assert.equal(edges.length, 13);
     assert.ok(edges[0].name);
   });
 
@@ -123,6 +128,40 @@ describe("rollAttributes", () => {
       else if (attr.score <= 13) assert.equal(attr.mod, 0);
       else if (attr.score <= 17) assert.equal(attr.mod, 1);
       else assert.equal(attr.mod, 2);
+    }
+  });
+});
+
+describe("rollAttributesHighVariance", () => {
+  it("assigns scores between 2 and 18 for all attributes", () => {
+    for (let i = 0; i < 100; i++) {
+      const c = rollAttributesHighVariance(createCharacter());
+      for (const attr of Object.values(c.attributes)) {
+        assert.ok(
+          attr.score >= 2 && attr.score <= 18,
+          `Score out of range: ${attr.score}`
+        );
+      }
+    }
+  });
+
+  it("auto-updates modifiers", () => {
+    const c = rollAttributesHighVariance(createCharacter());
+    for (const attr of Object.values(c.attributes)) {
+      if (attr.score <= 3) assert.equal(attr.mod, -2);
+      else if (attr.score <= 7) assert.equal(attr.mod, -1);
+      else if (attr.score <= 13) assert.equal(attr.mod, 0);
+      else if (attr.score <= 17) assert.equal(attr.mod, 1);
+      else assert.equal(attr.mod, 2);
+    }
+  });
+
+  it("never exceeds 18 after bonus rolls", () => {
+    for (let i = 0; i < 200; i++) {
+      const c = rollAttributesHighVariance(createCharacter());
+      for (const attr of Object.values(c.attributes)) {
+        assert.ok(attr.score <= 18, `Score exceeded 18: ${attr.score}`);
+      }
     }
   });
 });
@@ -318,14 +357,6 @@ describe("applyEdge", () => {
     assert.equal(pending[0].category, "combat");
   });
 
-  it("Prodigy returns pickAttribute excluding constitution", () => {
-    const c = createCharacter();
-    const { pending } = applyEdge(c, "Prodigy");
-    assert.equal(pending[0].type, "pickAttribute");
-    assert.ok(pending[0].exclude.includes("constitution"));
-    assert.equal(pending[0].setTo, 18);
-  });
-
   it("Voice of the People auto-grants Pop Idol focus and requests contact", () => {
     const c = createCharacter();
     const { pending } = applyEdge(c, "Voice of the People");
@@ -340,12 +371,18 @@ describe("applyEdge", () => {
       "Masterful Expertise",
       "Operator\u2019s Fortune",
       "Veteran\u2019s Luck",
-      "Wired",
     ]) {
       const c = createCharacter();
       const { pending } = applyEdge(c, name);
       assert.equal(pending.length, 0, `${name} should have no pending`);
     }
+  });
+
+  it("Wired returns pickCyberwarePackage pending", () => {
+    const c = createCharacter();
+    const { pending } = applyEdge(c, "Wired");
+    assert.equal(pending.length, 1);
+    assert.equal(pending[0].type, "pickCyberwarePackage");
   });
 });
 
@@ -400,23 +437,6 @@ describe("resolveEdgePending", () => {
     );
   });
 
-  it("resolves pickAttribute for Prodigy", () => {
-    const c = createCharacter();
-    const item = { type: "pickAttribute", exclude: ["constitution"], setTo: 18 };
-    resolveEdgePending(c, item, "strength");
-    assert.equal(c.attributes.strength.score, 18);
-    assert.equal(c.attributes.strength.mod, 2);
-  });
-
-  it("rejects excluded attribute", () => {
-    const c = createCharacter();
-    const item = { type: "pickAttribute", exclude: ["constitution"], setTo: 18 };
-    assert.throws(
-      () => resolveEdgePending(c, item, "constitution"),
-      /Cannot pick/
-    );
-  });
-
   it("resolves addContact", () => {
     const c = createCharacter();
     const item = {
@@ -428,6 +448,21 @@ describe("resolveEdgePending", () => {
     assert.equal(c.contacts.length, 1);
     assert.equal(c.contacts[0].name, "DJ Spinz");
     assert.equal(c.contacts[0].relationship, "Friend");
+  });
+
+  it("resolves pickCyberwarePackage", () => {
+    const c = createCharacter();
+    const item = { type: "pickCyberwarePackage" };
+    resolvePending(c, item, "Cutter");
+    assert.equal(c.cyberwarePackage.name, "Cutter");
+    assert.equal(c.cyberwarePackage.items.length, 2);
+    assert.equal(c.cyberwarePackage.items[0].name, "Body Blades II");
+  });
+
+  it("throws for unknown cyberware package", () => {
+    const c = createCharacter();
+    const item = { type: "pickCyberwarePackage" };
+    assert.throws(() => resolvePending(c, item, "Nonexistent"), /Unknown cyberware package/);
   });
 });
 
@@ -888,8 +923,8 @@ describe("offerFoci", () => {
 // --- Starting Gear ---
 
 describe("STARTING_WEAPONS", () => {
-  it("has 3 weapons (knife is separate)", () => {
-    assert.equal(STARTING_WEAPONS.length, 3);
+  it("has 2 weapons (knife is separate)", () => {
+    assert.equal(STARTING_WEAPONS.length, 2);
   });
 
   it("each weapon has required fields", () => {
@@ -933,20 +968,20 @@ describe("STARTING_ARMOR", () => {
 describe("equipStartingGear", () => {
   it("adds weapon, knife, and armor to inventory", () => {
     const c = createCharacter();
-    equipStartingGear(c, "Light Pistol", "Melee");
+    equipStartingGear(c, "Light Pistol", "Padded Jacket");
     assert.equal(c.inventory.length, 3);
     assert.equal(c.inventory[0].name, "Light Pistol");
     assert.equal(c.inventory[0].category, "weapon");
     assert.equal(c.inventory[1].name, "Knife");
     assert.equal(c.inventory[1].category, "weapon");
-    assert.equal(c.inventory[2].name, "Melee");
+    assert.equal(c.inventory[2].name, "Padded Jacket");
     assert.equal(c.inventory[2].category, "armor");
   });
 
   it("throws on unknown weapon name", () => {
     const c = createCharacter();
     assert.throws(
-      () => equipStartingGear(c, "Plasma Cannon", "Melee"),
+      () => equipStartingGear(c, "Plasma Cannon", "Padded Jacket"),
       /Unknown starting weapon/
     );
   });
@@ -961,17 +996,17 @@ describe("equipStartingGear", () => {
 
   it("is idempotent — re-equip replaces, does not duplicate", () => {
     const c = createCharacter();
-    equipStartingGear(c, "Light Pistol", "Melee");
-    equipStartingGear(c, "Rifle", "Ranged");
+    equipStartingGear(c, "Light Pistol", "Padded Jacket");
+    equipStartingGear(c, "Heavy Pistol", "Weave Vest");
     assert.equal(c.inventory.length, 3);
-    assert.equal(c.inventory[0].name, "Rifle");
+    assert.equal(c.inventory[0].name, "Heavy Pistol");
     assert.equal(c.inventory[1].name, "Knife");
-    assert.equal(c.inventory[2].name, "Ranged");
+    assert.equal(c.inventory[2].name, "Weave Vest");
   });
 
   it("does not mutate source constants", () => {
     const c = createCharacter();
-    equipStartingGear(c, "Light Pistol", "Balanced");
+    equipStartingGear(c, "Light Pistol", "Street Jacket");
     c.inventory[0].name = "MUTATED";
     assert.equal(STARTING_WEAPONS[0].name, "Light Pistol");
     assert.equal(STARTING_KNIFE.name, "Knife");
@@ -1103,5 +1138,186 @@ describe("addGeneratedContact", () => {
     const contact = generateContact("acquaintance");
     const result = addGeneratedContact(c, contact);
     assert.equal(result, c);
+  });
+});
+
+// --- Specialty Items ---
+
+describe("SPECIALTY_ITEMS", () => {
+  it("has 12 items", () => {
+    assert.equal(SPECIALTY_ITEMS.length, 12);
+  });
+
+  it("each item has required fields", () => {
+    for (const item of SPECIALTY_ITEMS) {
+      assert.ok(item.name, "missing name");
+      assert.ok(item.category, "missing category");
+      assert.equal(item.specialty, true, `${item.name} missing specialty flag`);
+      assert.ok(item.description, `${item.name} missing description`);
+      assert.ok(item.stats && typeof item.stats === "object", `${item.name} missing stats`);
+      assert.ok(item.prereqs, `${item.name} missing prereqs`);
+      assert.ok(item.prereqs.attributes !== undefined, `${item.name} missing prereqs.attributes`);
+      assert.ok(Array.isArray(item.prereqs.skills), `${item.name} prereqs.skills should be array`);
+    }
+  });
+
+  it("uses valid attribute keys in prereqs", () => {
+    const validAttrs = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
+    for (const item of SPECIALTY_ITEMS) {
+      for (const attr of Object.keys(item.prereqs.attributes)) {
+        assert.ok(validAttrs.includes(attr), `${item.name} has invalid prereq attr: ${attr}`);
+      }
+    }
+  });
+});
+
+describe("getAvailableSpecialtyItems", () => {
+  it("returns all items for a maxed-out character", () => {
+    const c = createCharacter();
+    for (const attr of Object.values(c.attributes)) {
+      attr.score = 18;
+    }
+    updateModifiers(c);
+    c.skills = { Fight: 1, Shoot: 1, Drive: 1, Program: 1, Heal: 1, Notice: 1 };
+    const available = getAvailableSpecialtyItems(c);
+    assert.equal(available.length, SPECIALTY_ITEMS.length);
+  });
+
+  it("returns empty for a character with all negative mods and no skills", () => {
+    const c = createCharacter();
+    for (const attr of Object.values(c.attributes)) {
+      attr.score = 3;
+    }
+    updateModifiers(c);
+    const available = getAvailableSpecialtyItems(c);
+    assert.equal(available.length, 0);
+  });
+
+  it("filters by attribute prereqs", () => {
+    const c = createCharacter();
+    // All scores 10 → mod 0, all prereqs require mod >= 0 so attr alone won't exclude
+    // But skill prereqs will — give all skills to isolate attribute filtering
+    c.skills = { Fight: 1, Shoot: 1, Drive: 1, Program: 1, Heal: 1, Notice: 1 };
+    const available = getAvailableSpecialtyItems(c);
+    for (const item of available) {
+      for (const [attr, reqMod] of Object.entries(item.prereqs.attributes)) {
+        assert.ok(c.attributes[attr].mod >= reqMod, `${item.name} should not be available`);
+      }
+    }
+    // All items require mod >= 0 and default mod is 0, so all should pass with skills present
+    assert.equal(available.length, SPECIALTY_ITEMS.length);
+  });
+
+  it("filters by skill prereqs", () => {
+    const c = createCharacter();
+    // No skills at all, default mod 0
+    const available = getAvailableSpecialtyItems(c);
+    // Only items with empty skills prereqs should appear
+    for (const item of available) {
+      assert.equal(item.prereqs.skills.length, 0, `${item.name} has skill prereqs but char has none`);
+    }
+  });
+
+  it("excludes items when attribute mod is negative", () => {
+    const c = createCharacter();
+    // Set all to 3 (mod -2) except intelligence
+    for (const attr of Object.keys(c.attributes)) {
+      c.attributes[attr].score = 3;
+    }
+    c.attributes.intelligence.score = 14; // mod +1
+    updateModifiers(c);
+    c.skills = { Heal: 0 };
+    const available = getAvailableSpecialtyItems(c);
+    // Kit, Cyberdoc requires int >= 0 and Heal — should be available
+    assert.ok(available.find((i) => i.name === "Kit, Cyberdoc"));
+    // Armored Clothing requires dex >= 0 — should NOT be available (dex mod is -2)
+    assert.ok(!available.find((i) => i.name === "Armored Clothing"));
+  });
+
+  it("does not mutate char", () => {
+    const c = createCharacter();
+    c.skills = { Fight: 0 };
+    const before = JSON.stringify(c);
+    getAvailableSpecialtyItems(c);
+    assert.equal(JSON.stringify(c), before);
+  });
+});
+
+describe("equipSpecialtyItem", () => {
+  it("adds item to inventory", () => {
+    const c = createCharacter();
+    c.skills = { Shoot: 0 };
+    equipSpecialtyItem(c, "Rifle");
+    assert.equal(c.inventory.length, 1);
+    assert.equal(c.inventory[0].name, "Rifle");
+    assert.equal(c.inventory[0].specialty, true);
+  });
+
+  it("throws on unknown item name", () => {
+    const c = createCharacter();
+    assert.throws(() => equipSpecialtyItem(c, "Plasma Sword"), /Unknown specialty item/);
+  });
+
+  it("throws when attribute prereqs not met", () => {
+    const c = createCharacter();
+    c.attributes.dexterity.score = 3;
+    updateModifiers(c);
+    c.skills = { Shoot: 0 };
+    // Rifle requires dex mod >= 0, char has -2
+    assert.throws(() => equipSpecialtyItem(c, "Rifle"), /Prerequisite not met/);
+  });
+
+  it("throws when skill prereqs not met", () => {
+    const c = createCharacter();
+    // Rifle requires Shoot skill
+    assert.throws(() => equipSpecialtyItem(c, "Rifle"), /Prerequisite not met.*Shoot/);
+  });
+
+  it("is idempotent — replaces previous specialty item", () => {
+    const c = createCharacter();
+    c.skills = { Shoot: 0 };
+    equipSpecialtyItem(c, "Rifle");
+    equipSpecialtyItem(c, "Shotgun");
+    const specialties = c.inventory.filter((i) => i.specialty);
+    assert.equal(specialties.length, 1);
+    assert.equal(specialties[0].name, "Shotgun");
+  });
+
+  it("preserves non-specialty items", () => {
+    const c = createCharacter();
+    equipStartingGear(c, "Light Pistol", "Padded Jacket");
+    c.skills = { Shoot: 0 };
+    equipSpecialtyItem(c, "Rifle");
+    assert.equal(c.inventory.length, 4); // weapon + knife + armor + specialty
+    assert.ok(c.inventory.find((i) => i.name === "Light Pistol"));
+    assert.ok(c.inventory.find((i) => i.name === "Knife"));
+    assert.ok(c.inventory.find((i) => i.name === "Padded Jacket"));
+  });
+
+  it("does not mutate SPECIALTY_ITEMS constant", () => {
+    const c = createCharacter();
+    c.skills = { Shoot: 0 };
+    equipSpecialtyItem(c, "Rifle");
+    c.inventory.find((i) => i.name === "Rifle").name = "MUTATED";
+    assert.equal(SPECIALTY_ITEMS.find((i) => i.stats.damage === "1d10+2").name, "Rifle");
+  });
+
+  it("returns char for chaining", () => {
+    const c = createCharacter();
+    c.skills = { Shoot: 0 };
+    const result = equipSpecialtyItem(c, "Rifle");
+    assert.equal(result, c);
+  });
+});
+
+describe("equipStartingGear preserves specialty items", () => {
+  it("does not remove specialty items when re-equipping gear", () => {
+    const c = createCharacter();
+    c.skills = { Shoot: 0 };
+    equipSpecialtyItem(c, "Rifle");
+    equipStartingGear(c, "Light Pistol", "Padded Jacket");
+    const specialty = c.inventory.find((i) => i.specialty);
+    assert.ok(specialty, "specialty item should still be in inventory");
+    assert.equal(specialty.name, "Rifle");
   });
 });

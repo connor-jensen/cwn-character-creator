@@ -1,6 +1,6 @@
 import data from "./cities_without_number_data.json" with { type: "json" };
 
-export const { edges, backgrounds, foci, contactTables } = data;
+export const { edges, backgrounds, foci, contactTables, cyberwarePackages } = data;
 
 // --- Dice Utilities ---
 
@@ -45,13 +45,14 @@ export function createCharacter() {
     contacts: [],
     hp: 0,
     bab: 0,
-    savingThrows: { physical: 0, evasion: 0, mental: 0 },
+    savingThrows: { physical: 0, evasion: 0, mental: 0, luck: 0 },
     // House rule derived stats (computed in calculateDerivedStats)
     damageSoak: 0,
     initiative: 0,
     traumaTarget: 0,
     startingContactBonus: 0,
     inventory: [],
+    cyberwarePackage: null,
   };
 }
 
@@ -62,6 +63,33 @@ export function rollAttributes(char) {
   for (const attr of attrs) {
     char.attributes[attr].score = rollDice(3, 6);
   }
+  return updateModifiers(char);
+}
+
+export function rollAttributesHighVariance(char) {
+  const attrs = Object.keys(char.attributes);
+
+  // Roll 1d6 + 1d12 for each attribute
+  for (const attr of attrs) {
+    char.attributes[attr].score = rollDie(6) + rollDie(12);
+  }
+
+  // Roll 3 bonus d6s: 1=STR, 2=DEX, 3=CON, 4=INT, 5=WIS, 6=CHA
+  for (let i = 0; i < 3; i++) {
+    const allMaxed = attrs.every((a) => char.attributes[a].score >= 18);
+    if (allMaxed) break;
+
+    let roll;
+    do {
+      roll = rollDie(6);
+    } while (char.attributes[attrs[roll - 1]].score >= 18);
+
+    char.attributes[attrs[roll - 1]].score = Math.min(
+      18,
+      char.attributes[attrs[roll - 1]].score + 1
+    );
+  }
+
   return updateModifiers(char);
 }
 
@@ -172,13 +200,6 @@ export function applyEdge(char, edgeName) {
     case "On Target":
       pending.push({ type: "pickSkill", category: "combat" });
       break;
-    case "Prodigy":
-      pending.push({
-        type: "pickAttribute",
-        exclude: ["constitution"],
-        setTo: 18,
-      });
-      break;
     case "Voice of the People":
       char.foci.push({ name: "Pop Idol", level: 2 });
       pending.push({
@@ -187,8 +208,11 @@ export function applyEdge(char, edgeName) {
         context: "related to your art",
       });
       break;
+    case "Wired":
+      pending.push({ type: "pickCyberwarePackage" });
+      break;
     // Hard To Kill, Masterful Expertise, Operator's Fortune,
-    // Veteran's Luck, Wired — passive or no creation-time effect
+    // Veteran's Luck — passive or no creation-time effect
   }
 
   return { char, pending };
@@ -245,6 +269,18 @@ export function resolvePending(char, pendingItem, choice) {
         relationship: pendingItem.relationship,
         description: pendingItem.context,
       });
+      break;
+    }
+    case "pickCyberwarePackage": {
+      const pkg = cyberwarePackages.find((p) => p.name === choice);
+      if (!pkg) throw new Error(`Unknown cyberware package: ${choice}`);
+      char.cyberwarePackage = {
+        name: pkg.name,
+        totalCost: pkg.totalCost,
+        totalSystemStrain: pkg.totalSystemStrain,
+        monthlyMaintenance: pkg.monthlyMaintenance,
+        items: pkg.items.map((item) => ({ ...item })),
+      };
       break;
     }
     default:
@@ -512,6 +548,7 @@ export function calculateDerivedStats(char) {
     16 - Math.max(dexMod, intMod) - char.level;
   char.savingThrows.mental =
     16 - Math.max(wisMod, chaMod) - char.level;
+  char.savingThrows.luck = 16 - char.level;
 
   // HOUSE RULE: STR mod → damage soak (only positive applies)
   char.damageSoak = Math.max(0, strMod);
@@ -561,18 +598,128 @@ export function calculateAC(armorType, hasShield = false) {
 // --- Starting Gear ---
 
 export const STARTING_WEAPONS = [
-  { name: "Light Pistol", category: "weapon", type: "Firearm", damage: "1d6", trauma_die: "1d8", trauma_rating: "x2", attribute: "Dexterity", range: "10/80", mag: 15, enc: 1 },
-  { name: "Heavy Pistol", category: "weapon", type: "Firearm", damage: "1d8", trauma_die: "1d6", trauma_rating: "x3", attribute: "Dexterity", range: "10/100", mag: 8, enc: 1 },
-  { name: "Rifle", category: "weapon", type: "Firearm", damage: "1d10+2", trauma_die: "1d8", trauma_rating: "x3", attribute: "Dexterity", range: "200/400", mag: 6, enc: 2 },
+  { name: "Light Pistol", category: "weapon", type: "Firearm", damage: "1d6", trauma_die: "1d8", trauma_rating: "x2", attribute: "Dexterity", range: "10/80", mag: 15, enc: 1, conceal: "subtle" },
+  { name: "Heavy Pistol", category: "weapon", type: "Firearm", damage: "1d8", trauma_die: "1d6", trauma_rating: "x3", attribute: "Dexterity", range: "10/100", mag: 8, enc: 1, conceal: "subtle" },
 ];
 
-export const STARTING_KNIFE = { name: "Knife", category: "weapon", type: "Melee/Thrown", damage: "1d4", shock: "1/AC 15", trauma_die: "1d6", trauma_rating: "x3", attribute: "Str/Dex", range: "10/20", enc: 1 };
+export const STARTING_KNIFE = { name: "Knife", category: "weapon", type: "Melee/Thrown", damage: "1d4", shock: "1/AC 15", trauma_die: "1d6", trauma_rating: "x3", attribute: "Str/Dex", range: "10/20", enc: 1, conceal: "hideable" };
 
 export const STARTING_ARMOR = [
-  { name: "Melee", category: "armor", meleeAC: 13, rangedAC: 10, soak: 2, traumaMod: 0 },
-  { name: "Ranged", category: "armor", meleeAC: 10, rangedAC: 13, soak: 0, traumaMod: 0 },
-  { name: "Balanced", category: "armor", meleeAC: 12, rangedAC: 11, soak: 0, traumaMod: 0 },
+  { name: "Padded Jacket", category: "armor", meleeAC: 13, rangedAC: 10, soak: 2, traumaMod: 0, conceal: "subtle" },
+  { name: "Weave Vest", category: "armor", meleeAC: 10, rangedAC: 13, soak: 0, traumaMod: 0, conceal: "subtle" },
+  { name: "Street Jacket", category: "armor", meleeAC: 12, rangedAC: 11, soak: 0, traumaMod: 0, conceal: "subtle" },
 ];
+
+export const SPECIALTY_ITEMS = [
+  {
+    name: "Reinforced Longcoat", category: "armor", specialty: true,
+    description: "Subtle plates and weaves disguised as fashion. Best for high-Dex operators who want to look normal.",
+    stats: { rangedAC: 15, meleeAC: 13, soak: 5, traumaTargetMod: 1, enc: 1, conceal: "subtle" },
+    prereqs: { attributes: { dexterity: 0 }, skills: [] },
+  },
+  {
+    name: "Impact Jacket", category: "armor", specialty: true,
+    description: "Built to absorb the impact of various contact sports, extreme athletics, vehicle races, they function as armor but are not subtle.",
+    stats: { rangedAC: 12, meleeAC: 14, soak: 8, traumaTargetMod: 1, enc: 1, conceal: "obvious" },
+    prereqs: { attributes: { constitution: 0 }, skills: [] },
+  },
+  {
+    name: "Rifle", category: "weapon", specialty: true,
+    description: "The standard high-powered firearm. Essential for long-range combat experts.",
+    stats: { damage: "1d10+2", range: "200/400", mag: 6, trauma: "1d8/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
+    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
+  },
+  {
+    name: "Shotgun", category: "weapon", specialty: true,
+    description: "Brutal close-quarters power. Multiple dice make damage more consistent.",
+    stats: { damage: "3d4", range: "10/30", mag: 2, trauma: "1d10/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
+    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
+  },
+  {
+    name: "Advanced Sword", category: "weapon", specialty: true,
+    description: "A high-tech blade with monomolecular edges. Deals high shock damage even on a miss.",
+    stats: { damage: "1d10", shock: "3/AC 15", trauma: "1d8/x3", attribute: "Str", enc: 1, conceal: "subtle" },
+    prereqs: { attributes: { strength: 0 }, skills: ["Fight"] },
+  },
+  {
+    name: "Advanced Bow", category: "weapon", specialty: true,
+    description: "Silent and huge crit potential, but requires your move action to reload unless you have Shoot-1",
+    stats: { damage: "1d8", range: "30/200", mag: 1, trauma: "1d8+1/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
+    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
+  },
+  {
+    name: "Cranial Jack", category: "cyberware", specialty: true,
+    description: "Essential for professional hackers. Allows you to plug directly into the net and vehicles.",
+    stats: { strain: 0.25, concealment: "Touch", effect: "Direct neural link to decks/hardware" },
+    prereqs: { attributes: { intelligence: 0, constitution: 0 }, skills: [] },
+  },
+  {
+    name: "Scrap Cyberdeck", category: "hacking", specialty: true,
+    description: "A basic, custom-built hacking rig. Necessary for anyone using Verbs and Subjects in cyberspace.",
+    stats: { memory: 8, shielding: 5, cpu: 2, bonusAccess: 1, enc: 1 },
+    prereqs: { attributes: { intelligence: 0 }, skills: ["Program"] },
+  },
+  {
+    name: "Goggles, IR", category: "tech", specialty: true,
+    description: "See heat signatures through smoke or darkness. Requires high perception to interpret correctly.",
+    stats: { effect: "Thermal vision up to 50m", enc: 1 },
+    prereqs: { attributes: { wisdom: 0 }, skills: ["Notice"] },
+  },
+  {
+    name: "Motorcycle", category: "vehicle", specialty: true,
+    description: "A fast, nimble bike for the street. High Dexterity is required to survive crashes.",
+    stats: { hp: 10, ac: 13, speed: 1, traumaTarget: 10, crew: 1, size: "S" },
+    prereqs: { attributes: { dexterity: 0 }, skills: ["Drive"] },
+  },
+  {
+    name: "BanTech Roach Drone", category: "drone", specialty: true,
+    description: "Small wheeled drone. Requires Intelligence and Drive skill to pilot remotely for scouting.",
+    stats: { hp: 8, ac: 13, move: "10m ground", fittings: 3, hardpoints: 0, enc: 3 },
+    prereqs: { attributes: { intelligence: 0 }, skills: ["Drive"] },
+  },
+  {
+    name: "Kit, Cyberdoc", category: "tech", specialty: true,
+    description: "Specialized medical kit. You must have Heal skill to use this for repairing your team's chrome.",
+    stats: { effect: "Maintenance/repair of cyberware", enc: 2 },
+    prereqs: { attributes: { intelligence: 0 }, skills: ["Heal"] },
+  },
+];
+
+export function getAvailableSpecialtyItems(char) {
+  return SPECIALTY_ITEMS.filter((item) => {
+    const { attributes = {}, skills = [] } = item.prereqs;
+    for (const [attr, requiredMod] of Object.entries(attributes)) {
+      if (!char.attributes[attr] || char.attributes[attr].mod < requiredMod) return false;
+    }
+    for (const skill of skills) {
+      if (char.skills[skill] === undefined) return false;
+    }
+    return true;
+  });
+}
+
+export function equipSpecialtyItem(char, itemName) {
+  const item = SPECIALTY_ITEMS.find((i) => i.name === itemName);
+  if (!item) throw new Error(`Unknown specialty item: ${itemName}`);
+
+  // Validate prereqs defensively
+  const { attributes = {}, skills = [] } = item.prereqs;
+  for (const [attr, requiredMod] of Object.entries(attributes)) {
+    if (!char.attributes[attr] || char.attributes[attr].mod < requiredMod) {
+      throw new Error(`Prerequisite not met: ${attr} mod must be >= ${requiredMod}`);
+    }
+  }
+  for (const skill of skills) {
+    if (char.skills[skill] === undefined) {
+      throw new Error(`Prerequisite not met: requires ${skill} skill`);
+    }
+  }
+
+  // Idempotent: clear previous specialty item
+  char.inventory = char.inventory.filter((i) => !i.specialty);
+  char.inventory.push({ ...item });
+  return char;
+}
 
 export function equipStartingGear(char, weaponName, armorName) {
   const weapon = STARTING_WEAPONS.find((w) => w.name === weaponName);
@@ -580,9 +727,9 @@ export function equipStartingGear(char, weaponName, armorName) {
   const armor = STARTING_ARMOR.find((a) => a.name === armorName);
   if (!armor) throw new Error(`Unknown starting armor: ${armorName}`);
 
-  // Idempotent: clear any existing weapon/armor
+  // Idempotent: clear any existing weapon/armor, but preserve specialty items
   char.inventory = char.inventory.filter(
-    (item) => item.category !== "weapon" && item.category !== "armor"
+    (item) => item.specialty || (item.category !== "weapon" && item.category !== "armor")
   );
 
   char.inventory.push({ ...weapon }, { ...STARTING_KNIFE }, { ...armor });

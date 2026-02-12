@@ -41,10 +41,6 @@
       "description": "Once per session as an Instant action, roll 1d6 when a bad event happens. 1: Unaffected. 2-5: Avert consequences. 6: Event lands on an enemy/rival instead."
     },
     {
-      "name": "Prodigy",
-      "description": "Pick an attribute (not Con); its score becomes 18 (+3 mod). Cannot be taken with the Underdog Rule."
-    },
-    {
       "name": "Veteran’s Luck",
       "description": "Once per scene, as an Instant action, treat an attack roll that hit you as a miss, or an attack you made that missed as a hit."
     },
@@ -54,7 +50,67 @@
     },
     {
       "name": "Wired",
-      "description": "Begin play with up to $200,000 worth of cyberware. Installation is free and maintenance is covered for two months."
+      "description": "Choose a cyberware package. Installation is free and maintenance is covered for two months."
+    }
+  ],
+  "cyberwarePackages": [
+    {
+      "name": "Cutter",
+      "description": "Powerful melee blades, higher resistance to Traumatic Hits, and a close-in brawler's edge.",
+      "totalCost": 65000,
+      "totalSystemStrain": 3,
+      "monthlyMaintenance": 3250,
+      "items": [
+        { "name": "Body Blades II", "description": "2d6 dmg, Shock 4/15, Trauma 1d10/x3", "cost": 25000, "systemStrain": 2 },
+        { "name": "Dermal Armor I", "description": "AC 16 vs. melee and ranged, +1 Trauma Target", "cost": 40000, "systemStrain": 1 }
+      ]
+    },
+    {
+      "name": "Gunner",
+      "description": "Hit with your Gunlink cyber and enhanced vision. Find the best gun you can get and keep out of melee range.",
+      "totalCost": 40000,
+      "totalSystemStrain": 1.5,
+      "monthlyMaintenance": 2000,
+      "items": [
+        { "name": "Gunlink", "description": "Ignore aim penalties, reroll a gun miss 1/scene", "cost": 25000, "systemStrain": 1 },
+        { "name": "Cybereyes with Infrared Vision", "description": "Flash protected and infra-sight", "cost": 15000, "systemStrain": 0.5 }
+      ]
+    },
+    {
+      "name": "Hacker or Driver",
+      "description": "Plug directly into hardware, survive neural hacking, silent comms, and remote-control drones or vehicles.",
+      "totalCost": 52000,
+      "totalSystemStrain": 3.5,
+      "monthlyMaintenance": 2600,
+      "items": [
+        { "name": "Cranial Jack", "description": "Can plug directly into jack-enabled hardware", "cost": 1000, "systemStrain": 0.25 },
+        { "name": "Neural Buffer", "description": "Gain 3 HP/level versus neural hacking damage", "cost": 40000, "systemStrain": 1 },
+        { "name": "Headcomm", "description": "Provides silent radio or cell communications", "cost": 1000, "systemStrain": 0.25 },
+        { "name": "Remote Control Unit", "description": "Remote control drones or vehicles", "cost": 10000, "systemStrain": 2 }
+      ]
+    },
+    {
+      "name": "Sneak",
+      "description": "Melee weapons come to you, no need for light or guards. Room in your budget for more cyber, but don't scout alone.",
+      "totalCost": 55000,
+      "totalSystemStrain": 1.5,
+      "monthlyMaintenance": 2750,
+      "items": [
+        { "name": "Cybereyes with Infrared Vision", "description": "Flash protected and infra-sight", "cost": 15000, "systemStrain": 0.5 },
+        { "name": "Stick Pads", "description": "Can cling to or climb sheer surfaces or overhangs", "cost": 15000, "systemStrain": 0.5 },
+        { "name": "Cyberears w/ Positional Detection", "description": "Noise protection + position location", "cost": 25000, "systemStrain": 0.5 }
+      ]
+    },
+    {
+      "name": "Techie or Doc",
+      "description": "An Omnihand multi-tool for tech work. Skillplugs can be bought with Wired funds, one at a time.",
+      "totalCost": 35000,
+      "totalSystemStrain": 0.75,
+      "monthlyMaintenance": 1750,
+      "items": [
+        { "name": "Omnihand", "description": "+1 skill check once/scene for technical work", "cost": 10000, "systemStrain": 0.25 },
+        { "name": "Skillplug Jack II", "description": "Can use level-1 physical or mental skill plugs", "cost": 25000, "systemStrain": 0.5 }
+      ]
     }
   ],
   "backgrounds": [

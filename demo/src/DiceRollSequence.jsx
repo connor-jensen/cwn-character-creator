@@ -30,44 +30,104 @@ function fmtMod(m) { return m >= 0 ? `+${m}` : `${m}`; }
 const MAX_SCORE = 18;
 const BUMP_TARGET = 14;
 
+// Standard timings (3 dice)
 const T_LOCK1 = ROLL_STEP + 500;
 const T_LOCK2 = T_LOCK1 + ROLL_STEP;
 const T_LOCK3 = T_LOCK2 + ROLL_STEP;
 const T_SETTLE = T_LOCK3 + ROLL_STEP;
 const T_NEXT = T_SETTLE + 500;
 
-export default function DiceRollSequence({ onComplete }) {
-  const rolls = useRef(null);
-  if (rolls.current === null) {
-    rolls.current = ATTR_NAMES.map(() => [rollDie(6), rollDie(6), rollDie(6)]);
+// High variance timings (2 dice)
+const T_HV_LOCK1 = ROLL_STEP + 500;
+const T_HV_LOCK2 = T_HV_LOCK1 + ROLL_STEP;
+const T_HV_SETTLE = T_HV_LOCK2 + ROLL_STEP;
+const T_HV_NEXT = T_HV_SETTLE + 500;
+
+function computeBonusRolls(mainRolls) {
+  const scores = mainRolls.map((dice) => dice[0] + dice[1]);
+  const bonuses = [];
+
+  for (let i = 0; i < 3; i++) {
+    if (scores.every((s) => s >= 18)) break;
+
+    const attempts = [];
+    let roll;
+    do {
+      roll = rollDie(6);
+      attempts.push(roll);
+    } while (scores[roll - 1] >= 18);
+
+    scores[roll - 1] = Math.min(18, scores[roll - 1] + 1);
+    bonuses.push({ attempts, finalRoll: roll, attrIdx: roll - 1 });
   }
 
+  return { bonuses, finalScores: scores };
+}
+
+export default function DiceRollSequence({ onComplete, mode = "standard" }) {
+  const isHighVar = mode === "highVariance";
+  const diceCount = isHighVar ? 2 : 3;
+
+  // Pre-roll all dice
+  const rolls = useRef(null);
+  const bonusData = useRef(null);
+
+  if (rolls.current === null) {
+    if (isHighVar) {
+      rolls.current = ATTR_NAMES.map(() => [rollDie(6), rollDie(12)]);
+      bonusData.current = computeBonusRolls(rolls.current);
+    } else {
+      rolls.current = ATTR_NAMES.map(() => [rollDie(6), rollDie(6), rollDie(6)]);
+    }
+  }
+
+  // Main roll states
   const [activeAttr, setActiveAttr] = useState(0);
   const [lockedCount, setLockedCount] = useState(0);
   const [settled, setSettled] = useState(false);
   const [selectable, setSelectable] = useState(false);
   const [hoveredAttr, setHoveredAttr] = useState(null);
   const [selectedAttr, setSelectedAttr] = useState(null);
-  const [spinValues, setSpinValues] = useState([1, 1, 1]);
+  const [lockedLowestAttr, setLockedLowestAttr] = useState(null);
+  const [noBump, setNoBump] = useState(false);
+  const [spinValues, setSpinValues] = useState(
+    isHighVar ? [1, 1] : [1, 1, 1]
+  );
 
   const spinRef = useRef(null);
 
-  // Spinning interval
+  // Bonus roll states (high variance only)
+  const [bonusPhaseActive, setBonusPhaseActive] = useState(false);
+  const [activeBonusIdx, setActiveBonusIdx] = useState(0);
+  const [bonusLocked, setBonusLocked] = useState(false);
+  const [appliedBonusCount, setAppliedBonusCount] = useState(0);
+  const [bonusSpinValue, setBonusSpinValue] = useState(1);
+  const bonusSpinRef = useRef(null);
+
+  // Spinning interval for main dice
   useEffect(() => {
     if (activeAttr >= ATTR_NAMES.length) return;
     spinRef.current = setInterval(() => {
-      setSpinValues([
-        Math.ceil(Math.random() * 6),
-        Math.ceil(Math.random() * 6),
-        Math.ceil(Math.random() * 6),
-      ]);
+      if (isHighVar) {
+        setSpinValues([
+          Math.ceil(Math.random() * 6),
+          Math.ceil(Math.random() * 12),
+        ]);
+      } else {
+        setSpinValues([
+          Math.ceil(Math.random() * 6),
+          Math.ceil(Math.random() * 6),
+          Math.ceil(Math.random() * 6),
+        ]);
+      }
     }, 50);
     return () => clearInterval(spinRef.current);
   }, [activeAttr]);
 
-  // Orchestrate per-attribute
+  // Orchestrate per-attribute (standard mode - 3 dice)
   useEffect(() => {
     if (activeAttr >= ATTR_NAMES.length) return;
+    if (isHighVar) return;
     setLockedCount(0);
     setSettled(false);
     const t = [];
@@ -79,12 +139,96 @@ export default function DiceRollSequence({ onComplete }) {
     return () => t.forEach(clearTimeout);
   }, [activeAttr]);
 
-  // Transition to selectable after all rolls
+  // Orchestrate per-attribute (high variance mode - 2 dice)
+  useEffect(() => {
+    if (activeAttr >= ATTR_NAMES.length) return;
+    if (!isHighVar) return;
+    setLockedCount(0);
+    setSettled(false);
+    const t = [];
+    t.push(setTimeout(() => setLockedCount(1), T_HV_LOCK1));
+    t.push(setTimeout(() => { setLockedCount(2); clearInterval(spinRef.current); }, T_HV_LOCK2));
+    t.push(setTimeout(() => setSettled(true), T_HV_SETTLE));
+    t.push(setTimeout(() => setActiveAttr((a) => a + 1), T_HV_NEXT));
+    return () => t.forEach(clearTimeout);
+  }, [activeAttr]);
+
+  // Transition after all main rolls
   useEffect(() => {
     if (activeAttr < ATTR_NAMES.length) return;
-    const t = setTimeout(() => setSelectable(true), 600);
-    return () => clearTimeout(t);
+    if (isHighVar) {
+      const t = setTimeout(() => setBonusPhaseActive(true), 600);
+      return () => clearTimeout(t);
+    } else {
+      // Check if total modifiers are negative — offer bump only for weak rolls
+      const totals = ATTR_NAMES.map((_, i) => {
+        const dice = rolls.current[i];
+        return dice[0] + dice[1] + dice[2];
+      });
+      const totalMods = totals.reduce((sum, s) => sum + scoreMod(s), 0);
+      if (totalMods < 0) {
+        // Offer bump selection, lock lowest stat
+        const minScore = Math.min(...totals);
+        const minIdx = totals.indexOf(minScore);
+        const t = setTimeout(() => {
+          setLockedLowestAttr(ATTR_NAMES[minIdx]);
+          setSelectable(true);
+        }, 600);
+        return () => clearTimeout(t);
+      } else {
+        // Good rolls — no bump needed
+        const t = setTimeout(() => setNoBump(true), 600);
+        return () => clearTimeout(t);
+      }
+    }
   }, [activeAttr]);
+
+  // Bonus die spinning
+  useEffect(() => {
+    if (!bonusPhaseActive) return;
+    if (!bonusData.current) return;
+    if (activeBonusIdx >= bonusData.current.bonuses.length) return;
+    if (bonusLocked) return;
+    bonusSpinRef.current = setInterval(() => {
+      setBonusSpinValue(Math.ceil(Math.random() * 6));
+    }, 50);
+    return () => clearInterval(bonusSpinRef.current);
+  }, [bonusPhaseActive, activeBonusIdx, bonusLocked]);
+
+  // Orchestrate each bonus roll
+  useEffect(() => {
+    if (!bonusPhaseActive) return;
+    if (!bonusData.current) return;
+    if (activeBonusIdx >= bonusData.current.bonuses.length) {
+      const totals = bonusData.current.finalScores;
+      const totalMods = totals.reduce((sum, s) => sum + scoreMod(s), 0);
+      if (totalMods < 0) {
+        const minScore = Math.min(...totals);
+        const minIdx = totals.indexOf(minScore);
+        const t = setTimeout(() => {
+          setLockedLowestAttr(ATTR_NAMES[minIdx]);
+          setSelectable(true);
+        }, 600);
+        return () => clearTimeout(t);
+      } else {
+        const t = setTimeout(() => setNoBump(true), 600);
+        return () => clearTimeout(t);
+      }
+    }
+    setBonusLocked(false);
+    const t = [];
+    t.push(setTimeout(() => {
+      setBonusLocked(true);
+      clearInterval(bonusSpinRef.current);
+    }, 600));
+    t.push(setTimeout(() => {
+      setAppliedBonusCount((prev) => prev + 1);
+    }, 900));
+    t.push(setTimeout(() => {
+      setActiveBonusIdx((prev) => prev + 1);
+    }, 1300));
+    return () => t.forEach(clearTimeout);
+  }, [bonusPhaseActive, activeBonusIdx]);
 
   const handleSelect = (attrName) => {
     setSelectedAttr(attrName);
@@ -94,7 +238,19 @@ export default function DiceRollSequence({ onComplete }) {
     const rollData = {};
     ATTR_NAMES.forEach((name, i) => {
       const dice = rolls.current[i];
-      const total = dice[0] + dice[1] + dice[2];
+      let total;
+      if (isHighVar) {
+        total = dice[0] + dice[1];
+        if (bonusData.current) {
+          for (const bonus of bonusData.current.bonuses) {
+            if (bonus.attrIdx === i) {
+              total = Math.min(18, total + 1);
+            }
+          }
+        }
+      } else {
+        total = dice[0] + dice[1] + dice[2];
+      }
       rollData[name] = { score: total, mod: scoreMod(total) };
     });
     onComplete(rollData, selectedAttr);
@@ -105,6 +261,26 @@ export default function DiceRollSequence({ onComplete }) {
     let sum = 0;
     for (let i = 0; i < locked; i++) sum += dice[i];
     return sum;
+  };
+
+  const getTotal = (attrIdx) => {
+    const dice = rolls.current[attrIdx];
+    let total = isHighVar ? dice[0] + dice[1] : dice[0] + dice[1] + dice[2];
+    if (isHighVar && bonusData.current) {
+      for (let j = 0; j < appliedBonusCount && j < bonusData.current.bonuses.length; j++) {
+        if (bonusData.current.bonuses[j].attrIdx === attrIdx) {
+          total = Math.min(18, total + 1);
+        }
+      }
+    }
+    return total;
+  };
+
+  const getBonusCountForAttr = (attrIdx) => {
+    if (!isHighVar || !bonusData.current) return 0;
+    return bonusData.current.bonuses
+      .slice(0, appliedBonusCount)
+      .filter((b) => b.attrIdx === attrIdx).length;
   };
 
   const getMeterColor = (runningScore, locked) => {
@@ -137,25 +313,34 @@ export default function DiceRollSequence({ onComplete }) {
         )}
       </AnimatePresence>
 
-      {/* Attribute rows — single element per attribute, transitions in place */}
+      {/* Attribute rows */}
       {ATTR_NAMES.slice(0, Math.min(activeAttr + 1, ATTR_NAMES.length)).map((name, i) => {
         const isRolling = i === activeAttr && activeAttr < ATTR_NAMES.length;
         const isDone = !isRolling;
         const dice = rolls.current[i];
-        const total = dice[0] + dice[1] + dice[2];
+        const total = getTotal(i);
         const mod = scoreMod(total);
-        const rowLocked = isDone ? 3 : lockedCount;
+        const rowLocked = isDone ? diceCount : lockedCount;
         const runningScore = getRunningScore(i, rowLocked);
+        const bonusCountForAttr = getBonusCountForAttr(i);
 
         // Selection-phase states
         const isHovered = selectable && hoveredAttr === name && selectedAttr !== name;
         const isSelected = selectedAttr === name;
         const isNotSelected = selectedAttr !== null && selectedAttr !== name && hoveredAttr !== name;
+        const isLockedLowest = lockedLowestAttr === name;
         const wouldChange = total < BUMP_TARGET;
         const showPreview = isDone && (isHovered || isSelected) && wouldChange;
         const displayScore = showPreview ? BUMP_TARGET : total;
         const displayMod = scoreMod(displayScore);
         const displayModClass = displayMod > 0 ? "positive" : displayMod < 0 ? "negative" : "neutral";
+
+        // Highlight attribute row when bonus is being applied to it
+        const isBonusTarget = isHighVar && bonusPhaseActive && !selectable
+          && bonusData.current
+          && activeBonusIdx < bonusData.current.bonuses.length
+          && bonusData.current.bonuses[activeBonusIdx].attrIdx === i
+          && bonusLocked;
 
         return (
           <motion.div
@@ -164,27 +349,29 @@ export default function DiceRollSequence({ onComplete }) {
               "dice-row-container",
               isRolling ? "active" : "done",
               isRolling && settled && "settled",
-              isDone && selectable && "selectable",
+              isDone && selectable && !isLockedLowest && "selectable",
               isDone && isHovered && "hovered",
               isDone && isSelected && "selected",
               isDone && isNotSelected && "dimmed",
+              isDone && isBonusTarget && "bonus-target",
+              isDone && isLockedLowest && "locked-lowest",
             ].filter(Boolean).join(" ")}
             initial={{ opacity: 0 }}
-            animate={{ opacity: isDone && isNotSelected ? 0.55 : 1 }}
+            animate={{ opacity: isLockedLowest ? 0.55 : (isDone && isNotSelected ? 0.55 : 1) }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            onClick={selectable ? () => handleSelect(name) : undefined}
-            onMouseEnter={selectable ? () => setHoveredAttr(name) : undefined}
-            onMouseLeave={selectable ? () => setHoveredAttr(null) : undefined}
-            role={selectable ? "button" : undefined}
-            tabIndex={selectable ? 0 : undefined}
-            onKeyDown={selectable ? (e) => {
+            onClick={selectable && !isLockedLowest ? () => handleSelect(name) : undefined}
+            onMouseEnter={selectable && !isLockedLowest ? () => setHoveredAttr(name) : undefined}
+            onMouseLeave={selectable && !isLockedLowest ? () => setHoveredAttr(null) : undefined}
+            role={selectable && !isLockedLowest ? "button" : undefined}
+            tabIndex={selectable && !isLockedLowest ? 0 : undefined}
+            onKeyDown={selectable && !isLockedLowest ? (e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(name); }
             } : undefined}
           >
             <div className="dice-row-inner">
               {/* Label */}
               <motion.span
-                className={`dice-row-label ${isRolling ? "active-label" : ""} ${(isHovered || isSelected) ? "gold-label" : ""}`}
+                className={`dice-row-label ${isRolling ? "active-label" : ""} ${(isHovered || isSelected) ? "gold-label" : ""} ${isBonusTarget ? "bonus-label" : ""} ${isLockedLowest ? "locked-label" : ""}`}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
@@ -194,12 +381,13 @@ export default function DiceRollSequence({ onComplete }) {
 
               {/* Dice */}
               <div className="dice-row-dice">
-                {[0, 1, 2].map((di) => {
+                {Array.from({ length: diceCount }, (_, di) => {
                   const isLocked = di < rowLocked;
+                  const isD12 = isHighVar && di === 1;
                   return (
                     <motion.div
                       key={di}
-                      className={`die-block ${isLocked || isDone ? "locked" : "spinning"} ${isDone ? "mini" : ""}`}
+                      className={`die-block ${isLocked || isDone ? "locked" : "spinning"} ${isDone ? "mini" : ""} ${isD12 ? "die-d12" : ""}`}
                       animate={isRolling && isLocked ? {
                         scale: [1, 1.25, 0.95, 1],
                         boxShadow: [
@@ -220,7 +408,7 @@ export default function DiceRollSequence({ onComplete }) {
               {/* Meter */}
               <div className="dice-row-meter-wrap">
                 <div className="dice-row-meter-track">
-                  {isDone && selectable && wouldChange && (
+                  {isDone && selectable && !isLockedLowest && wouldChange && (
                     <motion.div
                       className="dice-row-meter-preview"
                       initial={{ width: `${(total / MAX_SCORE) * 100}%`, opacity: 0 }}
@@ -240,11 +428,11 @@ export default function DiceRollSequence({ onComplete }) {
                     animate={{
                       width: isDone && isSelected && wouldChange
                         ? `${(BUMP_TARGET / MAX_SCORE) * 100}%`
-                        : `${(runningScore / MAX_SCORE) * 100}%`,
+                        : `${((isDone ? total : runningScore) / MAX_SCORE) * 100}%`,
                       ...(isDone ? {
                         backgroundColor: isSelected && wouldChange
                           ? getMeterColor(BUMP_TARGET, 3)
-                          : getMeterColor(total, 3),
+                          : getMeterColor(total, diceCount),
                       } : {}),
                     }}
                     transition={{
@@ -253,7 +441,7 @@ export default function DiceRollSequence({ onComplete }) {
                       ease: isRolling ? [0.16, 1, 0.3, 1] : "easeOut",
                     }}
                   />
-                  {isRolling && rowLocked < 3 && (
+                  {isRolling && rowLocked < diceCount && (
                     <motion.div
                       className="dice-row-meter-shimmer"
                       animate={{ x: ["-100%", "200%"] }}
@@ -263,10 +451,10 @@ export default function DiceRollSequence({ onComplete }) {
                 </div>
               </div>
 
-              {/* Score — key includes rowLocked so spring re-triggers on each die lock */}
+              {/* Score — key includes bonusCount so spring re-triggers on bonus apply */}
               <motion.span
-                className={`dice-row-score ${showPreview ? "score-gold" : ""}`}
-                key={`score-${i}-${rowLocked}`}
+                className={`dice-row-score ${showPreview ? "score-gold" : ""} ${isBonusTarget ? "score-bonus" : ""}`}
+                key={`score-${i}-${rowLocked}-${bonusCountForAttr}`}
                 initial={{ scale: 1.4, opacity: 0 }}
                 animate={{ scale: 1, opacity: rowLocked > 0 ? 1 : 0.3 }}
                 transition={isRolling
@@ -280,11 +468,11 @@ export default function DiceRollSequence({ onComplete }) {
 
               {/* Mod */}
               <motion.span
-                key={`mod-${i}-${rowLocked}`}
+                key={`mod-${i}-${rowLocked}-${bonusCountForAttr}`}
                 className={`dice-row-mod ${
                   isDone
                     ? (showPreview ? "gold-mod" : displayModClass)
-                    : (rowLocked === 3
+                    : (rowLocked === diceCount
                       ? (scoreMod(runningScore) > 0 ? "positive" : scoreMod(runningScore) < 0 ? "negative" : "neutral")
                       : "pending")
                 }`}
@@ -311,7 +499,7 @@ export default function DiceRollSequence({ onComplete }) {
             </motion.p>
 
             {/* Gold edge for selectable */}
-            {isDone && selectable && (
+            {isDone && selectable && !isLockedLowest && (
               <motion.div
                 className="dice-row-gold-edge"
                 initial={{ scaleX: 0 }}
@@ -323,17 +511,94 @@ export default function DiceRollSequence({ onComplete }) {
         );
       })}
 
+      {/* Bonus rolls section (high variance only) */}
+      {isHighVar && bonusPhaseActive && bonusData.current && bonusData.current.bonuses.length > 0 && (
+        <motion.div
+          className="dice-bonus-section"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="dice-select-prompt">
+            <div className="dice-select-prompt-line" />
+            <span className="dice-bonus-prompt-text">
+              Bonus Rolls
+            </span>
+            <div className="dice-select-prompt-line" />
+          </div>
+
+          {bonusData.current.bonuses.slice(0, activeBonusIdx + 1).map((bonus, i) => {
+            const isCurrent = i === activeBonusIdx;
+            const isDone = i < activeBonusIdx || (isCurrent && bonusLocked);
+            const attrLabel = ATTR_LABELS[bonus.attrIdx];
+            const rerolls = bonus.attempts.slice(0, -1);
+
+            return (
+              <motion.div
+                key={`bonus-${i}`}
+                className={`bonus-roll-row ${isDone ? "done" : "active"}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <span className="bonus-roll-label">#{i + 1}</span>
+                <div className="bonus-roll-dice">
+                  {/* Rerolled dice (attribute was at 18) */}
+                  {rerolls.map((val, j) => (
+                    <div key={`reroll-${j}`} className="die-block mini rerolled">
+                      {val}
+                    </div>
+                  ))}
+                  {/* Active/final die */}
+                  <motion.div
+                    className={`die-block mini ${isDone ? "locked" : "spinning"}`}
+                    animate={isCurrent && bonusLocked ? {
+                      scale: [1, 1.25, 0.95, 1],
+                      boxShadow: [
+                        "0 0 0px rgba(0,229,255,0)",
+                        "0 0 30px rgba(0,229,255,0.6)",
+                        "0 0 15px rgba(0,229,255,0.3)",
+                        "0 0 8px rgba(0,229,255,0.15)",
+                      ],
+                    } : {}}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  >
+                    {isDone ? bonus.finalRoll : bonusSpinValue}
+                  </motion.div>
+                </div>
+                <AnimatePresence>
+                  {isDone && (
+                    <motion.div
+                      className="bonus-roll-result"
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                      <span className="bonus-roll-arrow">{"\u2192"}</span>
+                      <span className="bonus-roll-attr">{attrLabel}</span>
+                      <span className="bonus-roll-plus">+1</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
+
       {/* Confirm button */}
       <AnimatePresence>
-        {selectedAttr !== null && (
+        {(selectedAttr !== null || noBump) && (
           <motion.div
             className="dice-confirm-wrap"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
+            transition={{ duration: 0.4, delay: noBump ? 0.3 : 0.5 }}
           >
             <button className="btn-action" onClick={handleConfirm}>
-              <span className="btn-prompt">&gt;_</span> Confirm &amp; Continue
+              <span className="btn-prompt">&gt;_</span>
+              {noBump ? " Continue" : " Confirm & Continue"}
             </button>
           </motion.div>
         )}
