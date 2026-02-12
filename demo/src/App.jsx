@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   createCharacter,
   setStatToFourteen,
@@ -7,6 +8,9 @@ import {
   addBonusSkill,
   resolvePending,
   calculateDerivedStats,
+  equipStartingGear,
+  STARTING_WEAPONS,
+  STARTING_ARMOR,
   offerEdges,
   offerFoci,
   updateModifiers,
@@ -16,6 +20,7 @@ import {
 } from "../../cwn-engine.js";
 import DiceRollSequence from "./DiceRollSequence.jsx";
 import BackgroundSequence from "./BackgroundSequence.jsx";
+import SelectionSequence from "./SelectionSequence.jsx";
 import "./App.css";
 
 const STEPS = [
@@ -25,11 +30,12 @@ const STEPS = [
   "pick_edge_2",
   "pick_focus",
   "bonus_skill",
+  "choose_gear",
   "done",
 ];
 
 const STEP_LABELS = [
-  "ATTR", "BG", "EDGE 1", "EDGE 2", "FOCUS", "BONUS", "DONE",
+  "ATTR", "BG", "EDGE 1", "EDGE 2", "FOCUS", "BONUS", "GEAR", "DONE",
 ];
 
 const ALL_SKILLS = [
@@ -103,6 +109,8 @@ function App() {
   const [rolling, setRolling] = useState(false);
   const [offers, setOffers] = useState(null);
   const [pendingQueue, setPendingQueue] = useState([]);
+  const [selectedWeapon, setSelectedWeapon] = useState(null);
+  const [selectedArmor, setSelectedArmor] = useState(null);
 
   const currentStep = STEPS[step];
 
@@ -116,7 +124,18 @@ function App() {
     setOffers(null);
     setRolling(false);
     setPendingQueue([]);
+    setSelectedWeapon(null);
+    setSelectedArmor(null);
   };
+
+  // Auto-generate offers when entering edge/focus steps
+  useEffect(() => {
+    if ((currentStep === "pick_edge_1" || currentStep === "pick_edge_2") && !offers) {
+      setOffers(offerEdges(char, 3));
+    } else if (currentStep === "pick_focus" && !offers) {
+      setOffers(offerFoci(char, 3));
+    }
+  }, [currentStep]);
 
   // --- Pending resolution ---
   const handleResolvePending = (choice) => {
@@ -196,6 +215,13 @@ function App() {
     advance();
   };
 
+  const handleEquipGear = () => {
+    const next = deepClone(char);
+    equipStartingGear(next, selectedWeapon, selectedArmor);
+    setChar(next);
+    advance();
+  };
+
   const handleFinish = () => {
     const next = deepClone(char);
     calculateDerivedStats(next);
@@ -206,189 +232,271 @@ function App() {
     (s) => char.skills[s] === undefined || char.skills[s] < 1
   );
 
+  const isFinalized = currentStep === "done" && char.hp > 0;
+
   return (
     <div className="app">
       <Header step={step} />
       <ProgressBar step={step} onStepClick={handleStepClick} />
 
       <div className="layout">
-        <div className="main">
-          {/* --- Roll Attributes --- */}
-          {currentStep === "roll_attributes" && (
-            <div className="step-panel" key="roll">
-              <div className="step-label">Step 01</div>
-              <h2 className="step-title">Roll Attributes</h2>
-              {!rolling ? (
-                <>
-                  <p className="step-desc">
-                    Generate your operative&apos;s base attributes by rolling 3d6 for each stat.
-                  </p>
-                  <button className="btn-action" onClick={handleStartRoll}>
-                    <span className="btn-prompt">&gt;_</span> Roll 3d6 for each stat
-                  </button>
-                </>
-              ) : (
-                <DiceRollSequence onComplete={handleRollComplete} />
-              )}
-            </div>
-          )}
-
-          {/* --- Background Assignment --- */}
-          {currentStep === "pick_background" && (
-            <div className="step-panel" key="bg">
-              <div className="step-label">Step 02</div>
-              <h2 className="step-title">Background Assignment</h2>
-              <BackgroundSequence
-                char={char}
-                onComplete={handleBackgroundComplete}
-              />
-            </div>
-          )}
-
-          {/* --- Pick Edge 1 --- */}
-          {currentStep === "pick_edge_1" && (
-            <div className="step-panel" key="edge1">
-              <div className="step-label">Step 03</div>
-              <h2 className="step-title">Choose Edge (1 of 2)</h2>
-              {!offers ? (
-                <>
-                  <p className="step-desc">
-                    Draw three edge files. Edges give your operative unique advantages in the city.
-                  </p>
-                  <button
-                    className="btn-action"
-                    onClick={() => setOffers(offerEdges(char, 3))}
-                  >
-                    <span className="btn-prompt">&gt;_</span> Draw 3 Edges
-                  </button>
-                </>
-              ) : (
-                <div className="offer-grid">
-                  {offers.map((edge, i) => (
-                    <button
-                      key={edge.name}
-                      className="offer-card"
-                      style={{ animationDelay: `${i * 0.1}s` }}
-                      onClick={() => handlePickEdge(edge.name)}
-                    >
-                      <span className="offer-card-id">
-                        #{String(i + 1).padStart(2, "0")}
-                      </span>
-                      <h3>{edge.name}</h3>
-                      <p className="offer-card-desc">{edge.description}</p>
-                    </button>
-                  ))}
+        <AnimatePresence mode="popLayout">
+          {!isFinalized && (
+            <motion.div
+              key="main-panel"
+              className="main"
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              {/* --- Roll Attributes --- */}
+              {currentStep === "roll_attributes" && (
+                <div className="step-panel" key="roll">
+                  <div className="step-label">Step 01</div>
+                  <h2 className="step-title">Roll Attributes</h2>
+                  {!rolling ? (
+                    <>
+                      <p className="step-desc">
+                        Generate your operative&apos;s base attributes by rolling 3d6 for each stat.
+                      </p>
+                      <button className="btn-action" onClick={handleStartRoll}>
+                        <span className="btn-prompt">&gt;_</span> Roll 3d6 for each stat
+                      </button>
+                    </>
+                  ) : (
+                    <DiceRollSequence onComplete={handleRollComplete} />
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* --- Pick Edge 2 --- */}
-          {currentStep === "pick_edge_2" && (
-            <div className="step-panel" key="edge2">
-              <div className="step-label">Step 04</div>
-              <h2 className="step-title">Choose Edge (2 of 2)</h2>
-              {!offers ? (
-                <>
-                  <p className="step-desc">
-                    Draw three more edge files for your second edge.
-                  </p>
-                  <button
-                    className="btn-action"
-                    onClick={() => setOffers(offerEdges(char, 3))}
-                  >
-                    <span className="btn-prompt">&gt;_</span> Draw 3 Edges
-                  </button>
-                </>
-              ) : (
-                <div className="offer-grid">
-                  {offers.map((edge, i) => (
-                    <button
-                      key={edge.name}
-                      className="offer-card"
-                      style={{ animationDelay: `${i * 0.1}s` }}
-                      onClick={() => handlePickEdge(edge.name)}
-                    >
-                      <span className="offer-card-id">
-                        #{String(i + 1).padStart(2, "0")}
-                      </span>
-                      <h3>{edge.name}</h3>
-                      <p className="offer-card-desc">{edge.description}</p>
-                    </button>
-                  ))}
+              {/* --- Background Assignment --- */}
+              {currentStep === "pick_background" && (
+                <div className="step-panel" key="bg">
+                  <div className="step-label">Step 02</div>
+                  <h2 className="step-title">Background Assignment</h2>
+                  <BackgroundSequence
+                    char={char}
+                    onComplete={handleBackgroundComplete}
+                  />
                 </div>
               )}
-            </div>
-          )}
 
-          {/* --- Pick Focus --- */}
-          {currentStep === "pick_focus" && (
-            <div className="step-panel" key="focus">
-              <div className="step-label">Step 05</div>
-              <h2 className="step-title">Choose Focus</h2>
-              {!offers ? (
-                <>
-                  <p className="step-desc">
-                    Draw three focus specializations. Your focus defines your operative&apos;s trained expertise.
-                  </p>
-                  <button
-                    className="btn-action"
-                    onClick={() => setOffers(offerFoci(char, 3))}
-                  >
-                    <span className="btn-prompt">&gt;_</span> Draw 3 Foci
-                  </button>
-                </>
-              ) : (
-                <div className="offer-grid">
-                  {offers.map((focus, i) => (
-                    <button
-                      key={focus.name}
-                      className="offer-card"
-                      style={{ animationDelay: `${i * 0.1}s` }}
-                      onClick={() => handlePickFocus(focus.name)}
-                    >
-                      <span className="offer-card-id">
-                        #{String(i + 1).padStart(2, "0")}
-                      </span>
-                      <h3>{focus.name}</h3>
-                      <p className="offer-card-desc">{focus.description}</p>
-                      <span className="offer-card-detail">{focus.level_1}</span>
-                    </button>
-                  ))}
+              {/* --- Pick Edge 1 --- */}
+              {currentStep === "pick_edge_1" && (
+                <div className="step-panel" key="edge1">
+                  <div className="step-label">Step 03</div>
+                  <h2 className="step-title">Choose Edge (1 of 2)</h2>
+                  {offers && (
+                    <SelectionSequence
+                      allItems={allEdges}
+                      offeredItems={offers}
+                      poolLabel="Edge"
+                      renderCardContent={(edge, offerIdx) => (
+                        <>
+                          <span className="offer-card-id">
+                            #{String(offerIdx + 1).padStart(2, "0")}
+                          </span>
+                          <h3>{edge.name}</h3>
+                          <p className="offer-card-desc">{edge.description}</p>
+                        </>
+                      )}
+                      onComplete={(name) => handlePickEdge(name)}
+                    />
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* --- Bonus Skill --- */}
-          {currentStep === "bonus_skill" && (
-            <div className="step-panel" key="bonus">
-              <div className="step-label">Step 06</div>
-              <h2 className="step-title">Bonus Skill</h2>
-              <p className="step-desc">
-                Select one final skill to add to your operative&apos;s repertoire.
-              </p>
-              <div className="choices">
-                {availableSkills.map((skill) => (
-                  <button
-                    key={skill}
-                    className="btn-choice"
-                    onClick={() => handleBonusSkill(skill)}
-                  >
-                    {skill}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+              {/* --- Pick Edge 2 --- */}
+              {currentStep === "pick_edge_2" && (
+                <div className="step-panel" key="edge2">
+                  <div className="step-label">Step 04</div>
+                  <h2 className="step-title">Choose Edge (2 of 2)</h2>
+                  {offers && (
+                    <SelectionSequence
+                      allItems={allEdges}
+                      offeredItems={offers}
+                      poolLabel="Edge"
+                      renderCardContent={(edge, offerIdx) => (
+                        <>
+                          <span className="offer-card-id">
+                            #{String(offerIdx + 1).padStart(2, "0")}
+                          </span>
+                          <h3>{edge.name}</h3>
+                          <p className="offer-card-desc">{edge.description}</p>
+                        </>
+                      )}
+                      onComplete={(name) => handlePickEdge(name)}
+                    />
+                  )}
+                </div>
+              )}
 
-          {/* --- Done --- */}
-          {currentStep === "done" && (
-            <div className="step-panel" key="done">
-              <div className="step-label">Complete</div>
-              <h2 className="step-title">Character Complete</h2>
-              {char.hp === 0 ? (
-                <>
+              {/* --- Pick Focus --- */}
+              {currentStep === "pick_focus" && (
+                <div className="step-panel" key="focus">
+                  <div className="step-label">Step 05</div>
+                  <h2 className="step-title">Choose Focus</h2>
+                  {offers && (
+                    <SelectionSequence
+                      allItems={allFoci}
+                      offeredItems={offers}
+                      poolLabel="Focus"
+                      renderCardContent={(focus, offerIdx) => (
+                        <>
+                          <span className="offer-card-id">
+                            #{String(offerIdx + 1).padStart(2, "0")}
+                          </span>
+                          <h3>{focus.name}</h3>
+                          <p className="offer-card-desc">{focus.description}</p>
+                          <span className="offer-card-detail">{focus.level_1}</span>
+                        </>
+                      )}
+                      onComplete={(name) => handlePickFocus(name)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* --- Bonus Skill --- */}
+              {currentStep === "bonus_skill" && (
+                <div className="step-panel" key="bonus">
+                  <div className="step-label">Step 06</div>
+                  <h2 className="step-title">Bonus Skill</h2>
+                  <p className="step-desc">
+                    Select one final skill to add to your operative&apos;s repertoire.
+                  </p>
+                  <div className="choices">
+                    {availableSkills.map((skill) => (
+                      <button
+                        key={skill}
+                        className="btn-choice"
+                        onClick={() => handleBonusSkill(skill)}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* --- Choose Gear --- */}
+              {currentStep === "choose_gear" && (
+                <div className="step-panel" key="gear">
+                  <div className="step-label">Step 07</div>
+                  <h2 className="step-title">Starting Gear</h2>
+                  <p className="step-desc">
+                    Select one weapon and one armor loadout for your operative.
+                  </p>
+
+                  <div className="gear-section">
+                    <div className="gear-section-label">Choose Weapon</div>
+                    <div className="gear-grid">
+                      {STARTING_WEAPONS.map((w) => (
+                        <button
+                          key={w.name}
+                          className={`gear-card${selectedWeapon === w.name ? " gear-card-selected" : ""}`}
+                          onClick={() => setSelectedWeapon(w.name)}
+                        >
+                          <span className="gear-card-type">{w.type}</span>
+                          <h3>{w.name}</h3>
+                          <div className="gear-card-stats">
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">DMG</span>
+                              <span className="gear-stat-value">{w.damage}</span>
+                            </div>
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">RNG</span>
+                              <span className="gear-stat-value">{w.range}</span>
+                            </div>
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">MAG</span>
+                              <span className="gear-stat-value">{w.mag || "—"}</span>
+                            </div>
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">ENC</span>
+                              <span className="gear-stat-value">{w.enc}</span>
+                            </div>
+                          </div>
+                          <div className="gear-card-stats">
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">Trauma</span>
+                              <span className="gear-stat-value">{w.trauma_die}</span>
+                            </div>
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">Rating</span>
+                              <span className="gear-stat-value">{w.trauma_rating}</span>
+                            </div>
+                            {w.shock && (
+                              <div className="gear-stat">
+                                <span className="gear-stat-label">Shock</span>
+                                <span className="gear-stat-value">{w.shock}</span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="gear-section">
+                    <div className="gear-section-label">Choose Armor</div>
+                    <div className="gear-grid">
+                      {STARTING_ARMOR.map((a) => (
+                        <button
+                          key={a.name}
+                          className={`gear-card${selectedArmor === a.name ? " gear-card-selected" : ""}`}
+                          onClick={() => setSelectedArmor(a.name)}
+                        >
+                          <h3>{a.name}</h3>
+                          <div className="gear-card-stats">
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">Melee AC</span>
+                              <span className="gear-stat-value">{a.meleeAC}</span>
+                            </div>
+                            <div className="gear-stat">
+                              <span className="gear-stat-label">Ranged AC</span>
+                              <span className="gear-stat-value">{a.rangedAC}</span>
+                            </div>
+                            {a.soak > 0 && (
+                              <div className="gear-stat">
+                                <span className="gear-stat-label">Soak</span>
+                                <span className="gear-stat-value">{a.soak}</span>
+                              </div>
+                            )}
+                            {a.traumaMod !== 0 && (
+                              <div className="gear-stat">
+                                <span className="gear-stat-label">Trauma Mod</span>
+                                <span className="gear-stat-value">{a.traumaMod >= 0 ? "+" : ""}{a.traumaMod}</span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {selectedWeapon && selectedArmor && (
+                      <motion.div
+                        className="gear-confirm-wrap"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <button className="btn-action" onClick={handleEquipGear}>
+                          <span className="btn-prompt">&gt;_</span> Confirm Loadout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* --- Done (finalize button) --- */}
+              {currentStep === "done" && (
+                <div className="step-panel" key="done">
+                  <div className="step-label">Step 08</div>
+                  <h2 className="step-title">Character Complete</h2>
                   <p className="step-desc">
                     Finalize your operative. Roll for hit points and calculate combat readiness.
                   </p>
@@ -396,17 +504,13 @@ function App() {
                     <span className="btn-prompt">&gt;_</span> Roll HP &amp;
                     Calculate Stats
                   </button>
-                </>
-              ) : (
-                <pre className="complete-json">
-                  {JSON.stringify(char, null, 2)}
-                </pre>
+                </div>
               )}
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        <Sidebar char={char} />
+        <Sidebar char={char} isFullWidth={isFinalized} />
       </div>
     </div>
   );
@@ -523,7 +627,7 @@ function PendingResolver({ item, char, onResolve }) {
 
 /* ===== Sidebar ===== */
 
-function Sidebar({ char }) {
+function Sidebar({ char, isFullWidth }) {
   const bgObj =
     char.background &&
     allBackgrounds.find((b) => b.name === char.background);
@@ -535,7 +639,11 @@ function Sidebar({ char }) {
     .filter(Boolean);
 
   return (
-    <aside className="sheet">
+    <motion.aside
+      className={`sheet${isFullWidth ? " sheet-full" : ""}`}
+      layout
+      transition={{ layout: { duration: 0.5, ease: "easeInOut" } }}
+    >
       <div className="sheet-header">
         <span className="sheet-header-label">Dossier</span>
         <div className="sheet-header-line" />
@@ -655,6 +763,46 @@ function Sidebar({ char }) {
           </div>
         </div>
 
+        {char.inventory.length > 0 && (
+          <div className="sheet-section">
+            <div className="sheet-section-title">
+              <span>Gear</span>
+            </div>
+            <div className="sheet-gear-list">
+              {char.inventory
+                .filter((item) => item.category === "weapon")
+                .map((w) => (
+                  <div key={w.name} className="sheet-gear-item">
+                    <div className="sheet-gear-name">
+                      {w.name}
+                      <span className="sheet-gear-type-tag">{w.type}</span>
+                    </div>
+                    <div className="sheet-gear-stats">
+                      <span className="sheet-gear-pill">DMG {w.damage}</span>
+                      <span className="sheet-gear-pill">RNG {w.range}</span>
+                      {w.mag && <span className="sheet-gear-pill">MAG {w.mag}</span>}
+                      <span className="sheet-gear-pill">Trauma {w.trauma_die} {w.trauma_rating}</span>
+                      {w.shock && <span className="sheet-gear-pill">Shock {w.shock}</span>}
+                    </div>
+                  </div>
+                ))}
+              {char.inventory
+                .filter((item) => item.category === "armor")
+                .map((a) => (
+                  <div key={a.name} className="sheet-gear-item">
+                    <div className="sheet-gear-name">{a.name} Armor</div>
+                    <div className="sheet-gear-stats">
+                      <span className="sheet-gear-pill">Melee AC {a.meleeAC}</span>
+                      <span className="sheet-gear-pill">Ranged AC {a.rangedAC}</span>
+                      {a.soak > 0 && <span className="sheet-gear-pill">Soak {a.soak}</span>}
+                      {a.traumaMod !== 0 && <span className="sheet-gear-pill">Trauma Mod {a.traumaMod >= 0 ? "+" : ""}{a.traumaMod}</span>}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         {char.hp > 0 && (
           <div className="sheet-section">
             <div className="sheet-section-title">
@@ -711,7 +859,7 @@ function Sidebar({ char }) {
           </div>
         )}
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 

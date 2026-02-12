@@ -23,6 +23,9 @@ import {
   offerEdges,
   offerFoci,
   rollDice,
+  STARTING_WEAPONS,
+  STARTING_ARMOR,
+  equipStartingGear,
   edges,
   backgrounds,
   foci,
@@ -874,5 +877,86 @@ describe("offerFoci", () => {
     const offers = offerFoci(c, 5);
     const names = offers.map((f) => f.name);
     assert.equal(new Set(names).size, names.length);
+  });
+});
+
+// --- Starting Gear ---
+
+describe("STARTING_WEAPONS", () => {
+  it("has 4 weapons", () => {
+    assert.equal(STARTING_WEAPONS.length, 4);
+  });
+
+  it("each weapon has required fields", () => {
+    for (const w of STARTING_WEAPONS) {
+      assert.ok(w.name);
+      assert.equal(w.category, "weapon");
+      assert.ok(w.type);
+      assert.ok(w.damage);
+      assert.ok(w.attribute);
+      assert.ok(w.range);
+      assert.ok(w.enc !== undefined);
+    }
+  });
+});
+
+describe("STARTING_ARMOR", () => {
+  it("has 3 armor options", () => {
+    assert.equal(STARTING_ARMOR.length, 3);
+  });
+
+  it("each armor has required fields", () => {
+    for (const a of STARTING_ARMOR) {
+      assert.ok(a.name);
+      assert.equal(a.category, "armor");
+      assert.ok(a.meleeAC !== undefined);
+      assert.ok(a.rangedAC !== undefined);
+      assert.ok(a.soak !== undefined);
+      assert.ok(a.traumaMod !== undefined);
+    }
+  });
+});
+
+describe("equipStartingGear", () => {
+  it("adds weapon and armor to inventory", () => {
+    const c = createCharacter();
+    equipStartingGear(c, "Light Pistol", "Melee");
+    assert.equal(c.inventory.length, 2);
+    assert.equal(c.inventory[0].name, "Light Pistol");
+    assert.equal(c.inventory[0].category, "weapon");
+    assert.equal(c.inventory[1].name, "Melee");
+    assert.equal(c.inventory[1].category, "armor");
+  });
+
+  it("throws on unknown weapon name", () => {
+    const c = createCharacter();
+    assert.throws(
+      () => equipStartingGear(c, "Plasma Cannon", "Melee"),
+      /Unknown starting weapon/
+    );
+  });
+
+  it("throws on unknown armor name", () => {
+    const c = createCharacter();
+    assert.throws(
+      () => equipStartingGear(c, "Knife", "Power Armor"),
+      /Unknown starting armor/
+    );
+  });
+
+  it("is idempotent — re-equip replaces, does not duplicate", () => {
+    const c = createCharacter();
+    equipStartingGear(c, "Light Pistol", "Melee");
+    equipStartingGear(c, "Rifle", "Ranged");
+    assert.equal(c.inventory.length, 2);
+    assert.equal(c.inventory[0].name, "Rifle");
+    assert.equal(c.inventory[1].name, "Ranged");
+  });
+
+  it("does not mutate source constants", () => {
+    const c = createCharacter();
+    equipStartingGear(c, "Knife", "Balanced");
+    c.inventory[0].name = "MUTATED";
+    assert.equal(STARTING_WEAPONS[3].name, "Knife");
   });
 });

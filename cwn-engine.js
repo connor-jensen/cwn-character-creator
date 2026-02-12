@@ -558,6 +558,36 @@ export function calculateAC(armorType, hasShield = false) {
   };
 }
 
+// --- Starting Gear ---
+
+export const STARTING_WEAPONS = [
+  { name: "Light Pistol", category: "weapon", type: "Firearm", damage: "1d6", trauma_die: "1d8", trauma_rating: "x2", attribute: "Dexterity", range: "10/80", mag: 15, enc: 1 },
+  { name: "Heavy Pistol", category: "weapon", type: "Firearm", damage: "1d8", trauma_die: "1d6", trauma_rating: "x3", attribute: "Dexterity", range: "10/100", mag: 8, enc: 1 },
+  { name: "Rifle", category: "weapon", type: "Firearm", damage: "1d10+2", trauma_die: "1d8", trauma_rating: "x3", attribute: "Dexterity", range: "200/400", mag: 6, enc: 2 },
+  { name: "Knife", category: "weapon", type: "Melee/Thrown", damage: "1d4", shock: "1/AC 15", trauma_die: "1d6", trauma_rating: "x3", attribute: "Str/Dex", range: "10/20", enc: 1 },
+];
+
+export const STARTING_ARMOR = [
+  { name: "Melee", category: "armor", meleeAC: 13, rangedAC: 10, soak: 2, traumaMod: 0 },
+  { name: "Ranged", category: "armor", meleeAC: 10, rangedAC: 13, soak: 0, traumaMod: 0 },
+  { name: "Balanced", category: "armor", meleeAC: 12, rangedAC: 11, soak: 0, traumaMod: 0 },
+];
+
+export function equipStartingGear(char, weaponName, armorName) {
+  const weapon = STARTING_WEAPONS.find((w) => w.name === weaponName);
+  if (!weapon) throw new Error(`Unknown starting weapon: ${weaponName}`);
+  const armor = STARTING_ARMOR.find((a) => a.name === armorName);
+  if (!armor) throw new Error(`Unknown starting armor: ${armorName}`);
+
+  // Idempotent: clear any existing weapon/armor
+  char.inventory = char.inventory.filter(
+    (item) => item.category !== "weapon" && item.category !== "armor"
+  );
+
+  char.inventory.push({ ...weapon }, { ...armor });
+  return char;
+}
+
 // --- Draft / Offer System ---
 
 function sampleWithout(pool, excludeNames, count) {
