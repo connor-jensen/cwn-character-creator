@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import "./ContactSequence.css";
 
 const DETAIL_ROWS = [
   { key: "socialCircle", label: "Social Circle" },

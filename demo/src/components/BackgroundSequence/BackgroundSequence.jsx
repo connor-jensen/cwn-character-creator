@@ -8,18 +8,10 @@ import {
   resolveLearningPick,
   resolvePending,
   backgrounds as allBackgrounds,
-} from "../../cwn-engine.js";
-import { ROLL_STEP } from "./timing.js";
-
-const ALL_SKILLS = [
-  "Connect", "Drive", "Exert", "Fight", "Fix", "Heal",
-  "Know", "Notice", "Program", "Shoot", "Sneak", "Talk",
-];
-const COMBAT_SKILLS = ["Shoot", "Fight"];
-const ATTR_NAMES = [
-  "strength", "dexterity", "constitution",
-  "intelligence", "wisdom", "charisma",
-];
+} from "../../../../cwn-engine.js";
+import { ALL_SKILLS, COMBAT_SKILLS, ATTR_NAMES, ROLL_STEP } from "../../constants.js";
+import { deepClone } from "../../helpers/deep-clone.js";
+import "./BackgroundSequence.css";
 
 const PHASE_ORDER = [
   "eliminate", "pick", "free_skill_resolve",
@@ -28,10 +20,6 @@ const PHASE_ORDER = [
   "learn2_roll", "learn2_resolve", "learn2_done",
   "confirm",
 ];
-
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

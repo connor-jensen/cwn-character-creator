@@ -1,0 +1,114 @@
+/* ===== Contact Sequence ===== */
+
+.contact-sequence {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.contact-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  padding: 1rem;
+}
+
+.contact-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.contact-relationship-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: var(--cyan-10);
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
+  font-size: 0.75rem;
+  color: var(--cyan);
+  letter-spacing: 0.05em;
+  text-transform: capitalize;
+}
+
+.contact-label {
+  font-size: 1rem;
+  color: var(--text-bright);
+  margin: 0;
+}
+
+.contact-name-input-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.contact-name-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.contact-name-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.contact-name-input:focus {
+  border-color: var(--cyan);
+}
+
+.contact-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.contact-detail-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+}
+
+.contact-detail-row:nth-child(even) {
+  background: var(--bg-deep);
+}
+
+.contact-detail-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  width: 10rem;
+}
+
+.contact-detail-value {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.contact-detail-highlight .contact-detail-value {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+/* Ability Pool (d20 table) */
+
+.contact-confirm-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}

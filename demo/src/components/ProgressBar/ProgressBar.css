@@ -1,0 +1,63 @@
+/* ===== Progress Bar ===== */
+
+.progress {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 0.5rem;
+  padding: 0;
+}
+
+.progress-segment {
+  flex: 1;
+  height: 3px;
+  background: var(--border-dim);
+  border-radius: 1px;
+  position: relative;
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.progress-segment.completed {
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan-50);
+}
+
+.progress-segment.active {
+  background: var(--cyan);
+  animation: glowPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--cyan-50), 0 0 16px var(--cyan-20);
+}
+
+.progress-labels {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 2rem;
+}
+
+.progress-label {
+  flex: 1;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.progress-label.completed {
+  color: var(--cyan);
+  opacity: 0.5;
+}
+
+.progress-label.active {
+  color: var(--cyan);
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .progress-labels {
+    display: none;
+  }
+}

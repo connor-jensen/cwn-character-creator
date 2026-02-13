@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import "./SelectionSequence.css";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

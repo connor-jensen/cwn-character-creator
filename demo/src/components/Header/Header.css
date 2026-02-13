@@ -1,0 +1,57 @@
+/* ===== Header ===== */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-dim);
+  margin-bottom: 1rem;
+}
+
+.header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.header-prefix {
+  color: var(--cyan);
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  color: var(--text-bright);
+  margin: 0;
+  text-shadow: 0 0 30px var(--cyan-20);
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.header-status .status-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.header-status .status-value {
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 1.1rem;
+  }
+}

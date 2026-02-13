@@ -1,12 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { rollDie } from "../../cwn-engine.js";
-import { ROLL_STEP } from "./timing.js";
+import { rollDie } from "../../../../cwn-engine.js";
+import { ATTR_NAMES, ROLL_STEP } from "../../constants.js";
+import "./DiceRollSequence.css";
 
-const ATTR_NAMES = [
-  "strength", "dexterity", "constitution",
-  "intelligence", "wisdom", "charisma",
-];
 const ATTR_LABELS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const ATTR_DESC = {
   strength: "Melee weapon attacks and damage. Bonus to damage soak \u2014 how much punishment you shrug off before it hurts.",

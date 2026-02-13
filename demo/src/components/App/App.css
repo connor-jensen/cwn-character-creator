@@ -1,0 +1,248 @@
+/* ===== Layout ===== */
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  min-height: 100vh;
+}
+
+/* ===== Main Layout ===== */
+
+.layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Step Panel ===== */
+
+.step-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  padding: 2rem;
+  position: relative;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.step-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+  opacity: 0.5;
+}
+
+.step-label {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.step-title {
+  font-size: 1.25rem;
+  color: var(--text-bright);
+  margin-bottom: 1.25rem;
+}
+
+.step-desc {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ===== Action Button ===== */
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--cyan-50);
+  color: var(--cyan);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--cyan-10), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn-action:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px var(--cyan-20), inset 0 0 15px var(--cyan-05);
+  color: var(--text-bright);
+}
+
+.btn-action:hover::before {
+  opacity: 1;
+}
+
+.btn-action:active {
+  transform: scale(0.98);
+}
+
+.btn-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.btn-action:disabled:hover {
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+.btn-action:disabled::before {
+  display: none;
+}
+
+.btn-prompt {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* ===== Complete Screen ===== */
+
+.complete-json {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre;
+  font-family: var(--font-mono);
+}
+
+/* ===== Roll Mode Toggle ===== */
+
+.roll-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.roll-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.roll-mode-btn:hover {
+  border-color: var(--cyan-50);
+  color: var(--text-primary);
+}
+
+.roll-mode-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-10);
+  box-shadow: 0 0 15px var(--cyan-10);
+}
+
+.roll-mode-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* ===== Character Name Input ===== */
+
+.char-name-input-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.char-name-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.char-name-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.char-name-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.char-name-input:focus {
+  border-color: var(--cyan);
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .app {
+    padding: 1rem;
+  }
+
+  .layout {
+    flex-direction: column;
+  }
+
+  .step-panel {
+    padding: 1.25rem;
+  }
+}

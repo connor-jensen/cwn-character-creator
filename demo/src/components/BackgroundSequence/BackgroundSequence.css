@@ -1,0 +1,427 @@
+/* ===== Growth Resolver ===== */
+
+.growth-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1.25rem;
+}
+
+.growth-result {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--amber);
+  font-size: 1rem;
+}
+
+.growth-panel label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+.growth-panel input[type="checkbox"] {
+  accent-color: var(--cyan);
+}
+
+.growth-panel select {
+  margin-right: 0.5rem;
+}
+
+/* ===== Background Sequence ===== */
+
+.bg-sequence {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* -- Pool list (flex layout) -- */
+
+.bg-pool-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.bg-pool-header {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.bg-item {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 2px;
+}
+
+.bg-item-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr 2fr;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.bg-pool-idx {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.bg-pool-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.bg-pool-desc {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.bg-highlighted {
+  color: var(--cyan) !important;
+}
+
+/* -- Expanded item (card view) -- */
+
+.bg-item-expanded {
+  padding: 1.25rem;
+  padding-bottom: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bg-item-details {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.bg-item-details h3 {
+  font-size: 1rem;
+  color: var(--text-bright);
+  margin: 0.25rem 0 0.75rem;
+}
+
+/* -- Pickable item (clickable with SELECT bar) -- */
+
+.bg-item-pickable {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.bg-item-pickable::after {
+  content: 'SELECT';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--bg-deep);
+  background: var(--cyan);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.bg-item-pickable:hover {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.1), 0 4px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.bg-item-pickable:hover::after {
+  transform: translateY(0);
+}
+
+.bg-item-selected {
+  box-shadow: 0 0 20px rgba(255, 182, 39, 0.15), 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.bg-item-selected::after {
+  transform: translateY(100%) !important;
+}
+
+.bg-confirm-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.bg-table-section {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.bg-table {
+  flex: 1;
+  min-width: 0;
+}
+
+.bg-table-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.35rem;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.bg-table-title.bg-table-title-active {
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan-20);
+}
+
+.bg-table-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-radius: 2px;
+  border: 1px solid transparent;
+  transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.bg-table-row:nth-child(even) {
+  background: var(--bg-deep);
+}
+
+.bg-table-row.highlighted {
+  background: var(--cyan-10);
+  color: var(--text-bright);
+  border-color: var(--cyan-20);
+  box-shadow: 0 0 10px var(--cyan-10);
+}
+
+.bg-table-index {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  width: 1rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* -- Roll sections -- */
+
+.bg-roll-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1.25rem;
+}
+
+.bg-roll-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bg-roll-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.05em;
+}
+
+.bg-roll-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--cyan);
+  opacity: 0.7;
+}
+
+.bg-roll-body {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.bg-roll-table {
+  flex: 1;
+  min-width: 0;
+}
+
+.bg-roll-table-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-radius: 2px;
+  transition: background 0.3s, color 0.3s;
+}
+
+.bg-roll-table-row:nth-child(even) {
+  background: var(--bg-deep);
+}
+
+.bg-roll-table-row.highlighted {
+  background: var(--cyan-10);
+  color: var(--text-bright);
+  border: 1px solid var(--cyan-20);
+  box-shadow: 0 0 10px var(--cyan-10);
+}
+
+.bg-roll-die-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.die-block.bg-die {
+  width: 56px;
+  height: 56px;
+  font-size: 1.5rem;
+}
+
+/* -- Roll result (done pause) -- */
+
+.bg-roll-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-dim);
+}
+
+.bg-roll-result-text {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.04em;
+}
+
+/* -- Inline resolvers -- */
+
+.bg-resolve-inline {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1.25rem;
+}
+
+.bg-resolve-split-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+.bg-resolve-split-label input[type="checkbox"] {
+  accent-color: var(--cyan);
+}
+
+/* -- Card-integrated die area -- */
+
+.bg-card-die-area {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 1;
+}
+
+.bg-card-die-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* -- Card outcomes -- */
+
+.bg-card-outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-dim);
+}
+
+.bg-card-outcome-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.bg-card-outcome-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+/* -- Selected choice button -- */
+
+.btn-choice.btn-choice-selected {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(255, 182, 39, 0.1);
+  box-shadow: 0 0 15px rgba(255, 182, 39, 0.15);
+}
+
+.btn-choice.btn-choice-selected .btn-choice-sub {
+  color: var(--amber);
+  opacity: 0.8;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+  .bg-table-section {
+    flex-direction: column;
+  }
+
+  .bg-roll-body {
+    flex-direction: column;
+  }
+
+  .bg-roll-die-area {
+    padding: 0.5rem;
+  }
+}
