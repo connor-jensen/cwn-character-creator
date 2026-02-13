@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
+// eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import {
   createCharacter,
@@ -46,42 +47,53 @@ export default function App() {
 
   const currentStep = STEPS[step];
 
-  const advance = useCallback(() => {
-    setOffers(null);
-    setStep((s) => s + 1);
+  const offersForStep = (stepName, currentChar) => {
+    if (stepName === "pick_edge_1" || stepName === "pick_edge_2") {
+      return offerEdges(currentChar, 3);
+    }
+    if (stepName === "pick_focus") {
+      return offerFoci(currentChar, 3);
+    }
+    return null;
+  };
+
+  const advanceTo = useCallback((nextIdx, currentChar) => {
+    const nextStepName = STEPS[nextIdx];
+    setOffers(offersForStep(nextStepName, currentChar));
+
+    if (nextStepName === "generate_contacts") {
+      const allotment = getContactAllotment(currentChar.attributes.charisma.mod);
+      if (allotment.length === 0) {
+        setOffers(null);
+        setStep(nextIdx + 1);
+        return;
+      }
+      setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
+    }
+
+    setStep(nextIdx);
   }, []);
 
   const handleStepClick = (i) => {
-    setStep(i);
-    setOffers(null);
+    const stepName = STEPS[i];
+    setOffers(offersForStep(stepName, char));
     setRolling(false);
     setPendingQueue([]);
     setSelectedWeapon(null);
     setSelectedArmor(null);
     setSelectedSpecialty(null);
-    setGeneratedContacts(null);
+    if (stepName === "generate_contacts") {
+      const allotment = getContactAllotment(char.attributes.charisma.mod);
+      if (allotment.length > 0) {
+        setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
+      } else {
+        setGeneratedContacts(null);
+      }
+    } else {
+      setGeneratedContacts(null);
+    }
+    setStep(i);
   };
-
-  // Auto-generate offers when entering edge/focus steps
-  useEffect(() => {
-    if ((currentStep === "pick_edge_1" || currentStep === "pick_edge_2") && !offers) {
-      setOffers(offerEdges(char, 3));
-    } else if (currentStep === "pick_focus" && !offers) {
-      setOffers(offerFoci(char, 3));
-    }
-  }, [currentStep]);
-
-  // Auto-generate contacts when entering contacts step
-  useEffect(() => {
-    if (currentStep !== "generate_contacts") return;
-    const allotment = getContactAllotment(char.attributes.charisma.mod);
-    if (allotment.length === 0) {
-      advance();
-      return;
-    }
-    const generated = allotment.map((rel) => generateContact(rel));
-    setGeneratedContacts(generated);
-  }, [currentStep]);
 
   // --- Pending resolution ---
   const handleResolvePending = (choice) => {
@@ -92,7 +104,7 @@ export default function App() {
     const remaining = pendingQueue.slice(1);
     setPendingQueue(remaining);
     if (remaining.length === 0) {
-      advance();
+      advanceTo(step + 1, next);
     }
   };
 
@@ -136,12 +148,12 @@ export default function App() {
     }
     setChar(next);
     setRolling(false);
-    advance();
+    advanceTo(step + 1, next);
   };
 
   const handleBackgroundComplete = (updatedChar) => {
     setChar(updatedChar);
-    advance();
+    advanceTo(step + 1, updatedChar);
   };
 
   const handlePickEdge = (edgeName) => {
@@ -151,7 +163,7 @@ export default function App() {
     if (pending.length > 0) {
       setPendingQueue(pending);
     } else {
-      advance();
+      advanceTo(step + 1, next);
     }
   };
 
@@ -162,7 +174,7 @@ export default function App() {
     if (pending.length > 0) {
       setPendingQueue(pending);
     } else {
-      advance();
+      advanceTo(step + 1, next);
     }
   };
 
@@ -170,7 +182,7 @@ export default function App() {
     const next = deepClone(char);
     addBonusSkill(next, skillName);
     setChar(next);
-    advance();
+    advanceTo(step + 1, next);
   };
 
   const handleEquipGear = () => {
@@ -178,7 +190,7 @@ export default function App() {
     equipStartingGear(next, selectedWeapon, selectedArmor);
     equipSpecialtyItem(next, selectedSpecialty);
     setChar(next);
-    advance();
+    advanceTo(step + 1, next);
   };
 
   const handleContactsComplete = (names) => {
@@ -189,7 +201,7 @@ export default function App() {
       addGeneratedContact(next, contact);
     }
     setChar(next);
-    advance();
+    advanceTo(step + 1, next);
   };
 
   const handleFinish = () => {

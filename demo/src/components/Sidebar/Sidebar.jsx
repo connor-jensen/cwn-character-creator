@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.aside)
 import { motion } from "motion/react";
 import {
   edges as allEdges,

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+// eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import { rollDie } from "../../../../cwn-engine.js";
 import { ATTR_NAMES, ROLL_STEP } from "../../constants.js";
@@ -65,18 +66,19 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
   const isHighVar = mode === "highVariance";
   const diceCount = isHighVar ? 2 : 3;
 
-  // Pre-roll all dice
-  const rolls = useRef(null);
-  const bonusData = useRef(null);
-
-  if (rolls.current === null) {
+  // Pre-roll all dice (computed once via lazy initializer)
+  const [rolls] = useState(() => {
     if (isHighVar) {
-      rolls.current = ATTR_NAMES.map(() => [rollDie(6), rollDie(12)]);
-      bonusData.current = computeBonusRolls(rolls.current);
-    } else {
-      rolls.current = ATTR_NAMES.map(() => [rollDie(6), rollDie(6), rollDie(6)]);
+      return ATTR_NAMES.map(() => [rollDie(6), rollDie(12)]);
     }
-  }
+    return ATTR_NAMES.map(() => [rollDie(6), rollDie(6), rollDie(6)]);
+  });
+  const [bonusData] = useState(() => {
+    if (isHighVar) {
+      return computeBonusRolls(rolls);
+    }
+    return null;
+  });
 
   // Main roll states
   const [activeAttr, setActiveAttr] = useState(0);
@@ -93,10 +95,25 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
 
   const spinRef = useRef(null);
 
+  // Reset animation state when activeAttr changes (render-time derivation)
+  const [prevActiveAttr, setPrevActiveAttr] = useState(0);
+  if (activeAttr !== prevActiveAttr) {
+    setPrevActiveAttr(activeAttr);
+    setLockedCount(0);
+    setSettled(false);
+  }
+
   // Bonus roll states (high variance only)
   const [bonusPhaseActive, setBonusPhaseActive] = useState(false);
   const [activeBonusIdx, setActiveBonusIdx] = useState(0);
   const [bonusLocked, setBonusLocked] = useState(false);
+
+  // Reset bonusLocked when activeBonusIdx changes (render-time derivation)
+  const [prevBonusIdx, setPrevBonusIdx] = useState(0);
+  if (activeBonusIdx !== prevBonusIdx) {
+    setPrevBonusIdx(activeBonusIdx);
+    setBonusLocked(false);
+  }
   const [appliedBonusCount, setAppliedBonusCount] = useState(0);
   const [bonusSpinValue, setBonusSpinValue] = useState(1);
   const bonusSpinRef = useRef(null);
@@ -119,14 +136,12 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
       }
     }, 50);
     return () => clearInterval(spinRef.current);
-  }, [activeAttr]);
+  }, [activeAttr, isHighVar]);
 
   // Orchestrate per-attribute (standard mode - 3 dice)
   useEffect(() => {
     if (activeAttr >= ATTR_NAMES.length) return;
     if (isHighVar) return;
-    setLockedCount(0);
-    setSettled(false);
     const t = [];
     t.push(setTimeout(() => setLockedCount(1), T_LOCK1));
     t.push(setTimeout(() => setLockedCount(2), T_LOCK2));
@@ -134,21 +149,19 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
     t.push(setTimeout(() => setSettled(true), T_SETTLE));
     t.push(setTimeout(() => setActiveAttr((a) => a + 1), T_NEXT));
     return () => t.forEach(clearTimeout);
-  }, [activeAttr]);
+  }, [activeAttr, isHighVar]);
 
   // Orchestrate per-attribute (high variance mode - 2 dice)
   useEffect(() => {
     if (activeAttr >= ATTR_NAMES.length) return;
     if (!isHighVar) return;
-    setLockedCount(0);
-    setSettled(false);
     const t = [];
     t.push(setTimeout(() => setLockedCount(1), T_HV_LOCK1));
     t.push(setTimeout(() => { setLockedCount(2); clearInterval(spinRef.current); }, T_HV_LOCK2));
     t.push(setTimeout(() => setSettled(true), T_HV_SETTLE));
     t.push(setTimeout(() => setActiveAttr((a) => a + 1), T_HV_NEXT));
     return () => t.forEach(clearTimeout);
-  }, [activeAttr]);
+  }, [activeAttr, isHighVar]);
 
   // Transition after all main rolls
   useEffect(() => {
@@ -159,7 +172,7 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
     } else {
       // Check if total modifiers are negative — offer bump only for weak rolls
       const totals = ATTR_NAMES.map((_, i) => {
-        const dice = rolls.current[i];
+        const dice = rolls[i];
         return dice[0] + dice[1] + dice[2];
       });
       const totalMods = totals.reduce((sum, s) => sum + scoreMod(s), 0);
@@ -178,26 +191,26 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
         return () => clearTimeout(t);
       }
     }
-  }, [activeAttr]);
+  }, [activeAttr, isHighVar, rolls]);
 
   // Bonus die spinning
   useEffect(() => {
     if (!bonusPhaseActive) return;
-    if (!bonusData.current) return;
-    if (activeBonusIdx >= bonusData.current.bonuses.length) return;
+    if (!bonusData) return;
+    if (activeBonusIdx >= bonusData.bonuses.length) return;
     if (bonusLocked) return;
     bonusSpinRef.current = setInterval(() => {
       setBonusSpinValue(Math.ceil(Math.random() * 6));
     }, 50);
     return () => clearInterval(bonusSpinRef.current);
-  }, [bonusPhaseActive, activeBonusIdx, bonusLocked]);
+  }, [bonusPhaseActive, activeBonusIdx, bonusLocked, bonusData]);
 
   // Orchestrate each bonus roll
   useEffect(() => {
     if (!bonusPhaseActive) return;
-    if (!bonusData.current) return;
-    if (activeBonusIdx >= bonusData.current.bonuses.length) {
-      const totals = bonusData.current.finalScores;
+    if (!bonusData) return;
+    if (activeBonusIdx >= bonusData.bonuses.length) {
+      const totals = bonusData.finalScores;
       const totalMods = totals.reduce((sum, s) => sum + scoreMod(s), 0);
       if (totalMods < 0) {
         const minScore = Math.min(...totals);
@@ -212,7 +225,6 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
         return () => clearTimeout(t);
       }
     }
-    setBonusLocked(false);
     const t = [];
     t.push(setTimeout(() => {
       setBonusLocked(true);
@@ -225,7 +237,7 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
       setActiveBonusIdx((prev) => prev + 1);
     }, 1300));
     return () => t.forEach(clearTimeout);
-  }, [bonusPhaseActive, activeBonusIdx]);
+  }, [bonusPhaseActive, activeBonusIdx, bonusData]);
 
   const handleSelect = (attrName) => {
     setSelectedAttr(attrName);
@@ -234,12 +246,12 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
   const handleConfirm = () => {
     const rollData = {};
     ATTR_NAMES.forEach((name, i) => {
-      const dice = rolls.current[i];
+      const dice = rolls[i];
       let total;
       if (isHighVar) {
         total = dice[0] + dice[1];
-        if (bonusData.current) {
-          for (const bonus of bonusData.current.bonuses) {
+        if (bonusData) {
+          for (const bonus of bonusData.bonuses) {
             if (bonus.attrIdx === i) {
               total = Math.min(18, total + 1);
             }
@@ -254,18 +266,18 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
   };
 
   const getRunningScore = (attrIdx, locked) => {
-    const dice = rolls.current[attrIdx];
+    const dice = rolls[attrIdx];
     let sum = 0;
     for (let i = 0; i < locked; i++) sum += dice[i];
     return sum;
   };
 
   const getTotal = (attrIdx) => {
-    const dice = rolls.current[attrIdx];
+    const dice = rolls[attrIdx];
     let total = isHighVar ? dice[0] + dice[1] : dice[0] + dice[1] + dice[2];
-    if (isHighVar && bonusData.current) {
-      for (let j = 0; j < appliedBonusCount && j < bonusData.current.bonuses.length; j++) {
-        if (bonusData.current.bonuses[j].attrIdx === attrIdx) {
+    if (isHighVar && bonusData) {
+      for (let j = 0; j < appliedBonusCount && j < bonusData.bonuses.length; j++) {
+        if (bonusData.bonuses[j].attrIdx === attrIdx) {
           total = Math.min(18, total + 1);
         }
       }
@@ -274,8 +286,8 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
   };
 
   const getBonusCountForAttr = (attrIdx) => {
-    if (!isHighVar || !bonusData.current) return 0;
-    return bonusData.current.bonuses
+    if (!isHighVar || !bonusData) return 0;
+    return bonusData.bonuses
       .slice(0, appliedBonusCount)
       .filter((b) => b.attrIdx === attrIdx).length;
   };
@@ -314,9 +326,8 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
       {ATTR_NAMES.slice(0, Math.min(activeAttr + 1, ATTR_NAMES.length)).map((name, i) => {
         const isRolling = i === activeAttr && activeAttr < ATTR_NAMES.length;
         const isDone = !isRolling;
-        const dice = rolls.current[i];
+        const dice = rolls[i];
         const total = getTotal(i);
-        const mod = scoreMod(total);
         const rowLocked = isDone ? diceCount : lockedCount;
         const runningScore = getRunningScore(i, rowLocked);
         const bonusCountForAttr = getBonusCountForAttr(i);
@@ -334,9 +345,9 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
 
         // Highlight attribute row when bonus is being applied to it
         const isBonusTarget = isHighVar && bonusPhaseActive && !selectable
-          && bonusData.current
-          && activeBonusIdx < bonusData.current.bonuses.length
-          && bonusData.current.bonuses[activeBonusIdx].attrIdx === i
+          && bonusData
+          && activeBonusIdx < bonusData.bonuses.length
+          && bonusData.bonuses[activeBonusIdx].attrIdx === i
           && bonusLocked;
 
         return (
@@ -509,7 +520,7 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
       })}
 
       {/* Bonus rolls section (high variance only) */}
-      {isHighVar && bonusPhaseActive && bonusData.current && bonusData.current.bonuses.length > 0 && (
+      {isHighVar && bonusPhaseActive && bonusData && bonusData.bonuses.length > 0 && (
         <motion.div
           className="dice-bonus-section"
           initial={{ opacity: 0 }}
@@ -524,7 +535,7 @@ export default function DiceRollSequence({ onComplete, mode = "standard" }) {
             <div className="dice-select-prompt-line" />
           </div>
 
-          {bonusData.current.bonuses.slice(0, activeBonusIdx + 1).map((bonus, i) => {
+          {bonusData.bonuses.slice(0, activeBonusIdx + 1).map((bonus, i) => {
             const isCurrent = i === activeBonusIdx;
             const isDone = i < activeBonusIdx || (isCurrent && bonusLocked);
             const attrLabel = ATTR_LABELS[bonus.attrIdx];

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+// eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import "./SelectionSequence.css";
 
@@ -56,7 +57,7 @@ export default function SelectionSequence({
 
     run();
     return () => { cancelled = true; };
-  }, []);
+  }, [allItems, offeredItems]);
 
   /* ---- Confirm handler ---- */
   const handleConfirm = (name) => {
