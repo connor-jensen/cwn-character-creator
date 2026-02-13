@@ -2250,163 +2250,813 @@
   margin-top: 1.25rem;
 }
 
-/* ===== Character Dossier ===== */
+/* ===== CHARACTER DOSSIER ===== */
 
-.dossier {
-  padding: 1.5rem;
+.dos {
+  padding: 1.75rem 2rem 2rem;
+  position: relative;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.018) 1px, transparent 1px);
+  background-size: 24px 24px;
+  animation: fadeIn 0.4s ease-out;
 }
 
-.dossier-header {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+/* Corner marks */
+.dos-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dos-corner-tl { top: 0; left: 0; border-top: 2px solid var(--cyan-50); border-left: 2px solid var(--cyan-50); }
+.dos-corner-tr { top: 0; right: 0; border-top: 2px solid var(--cyan-50); border-right: 2px solid var(--cyan-50); }
+.dos-corner-bl { bottom: 0; left: 0; border-bottom: 2px solid var(--cyan-50); border-left: 2px solid var(--cyan-50); }
+.dos-corner-br { bottom: 0; right: 0; border-bottom: 2px solid var(--cyan-50); border-right: 2px solid var(--cyan-50); }
+
+/* Classification bar */
+.dos-class-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-dim);
+  margin-bottom: 1.25rem;
+}
+
+.dos-class-mark {
+  color: var(--cyan);
+  font-size: 0.6rem;
+  opacity: 0.6;
+}
+
+.dos-class-text {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.22em;
+}
+
+.dos-class-sep {
+  color: var(--cyan-50);
+  font-size: 0.6rem;
+}
+
+.dos-class-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-dim), transparent);
+}
+
+.dos-class-id {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+}
+
+/* Identity block */
+.dos-identity {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-dim);
 }
 
-.dossier-name {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+.dos-name {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 2.2rem;
   font-weight: 700;
   color: var(--text-bright);
-  letter-spacing: 0.05em;
-  margin: 0 0 0.5rem;
-  text-shadow: 0 0 30px var(--cyan-20);
-}
-
-.dossier-bg {
-  margin-top: 0.5rem;
-}
-
-.dossier-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-.dossier-col {
-  display: flex;
-  flex-direction: column;
-}
-
-.dossier-section-first {
-  margin-top: 0;
-}
-
-.dossier-combat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.dossier-inline-row {
-  display: flex;
-  gap: 1.25rem;
-}
-
-.dossier-inline-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-}
-
-.dossier-inline-label {
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem;
+  text-shadow: 0 0 40px var(--cyan-20), 0 0 80px var(--cyan-10);
+  line-height: 1;
 }
 
-.dossier-inline-value {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-bright);
-}
-
-.dossier-armor-name {
-  font-size: 0.85rem;
-  color: var(--amber);
+.dos-bg-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.4rem;
 }
 
-/* Weapon Table */
-
-.dossier-table-wrap {
-  overflow-x: auto;
-}
-
-.dossier-weapon-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-
-.dossier-weapon-table th {
+.dos-bg-tag {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: var(--cyan-10);
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dos-lvl-tag {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 0.4rem 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
 }
 
-.dossier-weapon-table td {
-  padding: 0.35rem 0.5rem;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-dim);
+.dos-bg-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 60ch;
 }
 
-.dossier-weapon-table tbody tr:nth-child(even) {
-  background: var(--bg-deep);
+/* Grid */
+.dos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2.5rem;
+  align-items: start;
 }
 
-.dossier-weapon-name {
+.dos-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sections */
+.dos-section {
+  margin-bottom: 1.5rem;
+}
+
+.dos-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.dos-section-num {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--cyan);
+  opacity: 0.45;
+  letter-spacing: 0.05em;
+}
+
+.dos-section-lbl {
   font-family: var(--font-display);
-  font-weight: 600;
-  color: var(--text-bright);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.dossier-weapon-hit {
+.dos-section-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-dim);
+}
+
+/* ---- Attributes ---- */
+.dos-attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dos-attr {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 1.75rem 2rem;
+  gap: 0.6rem;
+  align-items: center;
+  transition: background 0.15s;
+  padding: 0.15rem 0.3rem;
+  border-radius: 2px;
+  margin: 0 -0.3rem;
+}
+
+.dos-attr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dos-attr-abbr {
   font-family: var(--font-display);
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--cyan);
+  color: var(--text-secondary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* Specialty blocks in dossier */
-
-.dossier-specialty-block {
-  padding: 0.5rem 0;
+.dos-attr-track {
+  height: 6px;
+  background: var(--bg-deep);
+  border-radius: 3px;
+  border: 1px solid var(--border-dim);
+  overflow: hidden;
 }
 
-.dossier-specialty-block .sheet-item-desc {
+.dos-attr-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease, box-shadow 0.2s;
+}
+
+.dos-attr-fill.high { background: var(--cyan); box-shadow: 0 0 8px var(--cyan-50); }
+.dos-attr-fill.pos { background: var(--green); box-shadow: 0 0 6px rgba(57, 255, 20, 0.3); }
+.dos-attr-fill.zero { background: var(--text-muted); }
+.dos-attr-fill.neg { background: var(--magenta); box-shadow: 0 0 6px var(--magenta-50); }
+
+.dos-attr:hover .dos-attr-fill.high { box-shadow: 0 0 14px var(--cyan-50); }
+.dos-attr:hover .dos-attr-fill.pos { box-shadow: 0 0 12px rgba(57, 255, 20, 0.4); }
+.dos-attr:hover .dos-attr-fill.zero { box-shadow: 0 0 8px rgba(110, 110, 144, 0.2); }
+.dos-attr:hover .dos-attr-fill.neg { box-shadow: 0 0 12px var(--magenta-50); }
+
+.dos-attr-score {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  text-align: right;
+}
+
+.dos-attr-mod {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dos-attr-mod.high { color: var(--cyan); text-shadow: 0 0 8px var(--cyan-20); }
+.dos-attr-mod.pos { color: var(--green); }
+.dos-attr-mod.neg { color: var(--magenta); }
+.dos-attr-mod.zero { color: var(--text-muted); }
+
+/* ---- Skills ---- */
+.dos-skill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.dos-skill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dos-skill:not(.dos-skill-untrained) {
+  border-left: 2px solid var(--cyan-50);
+}
+
+.dos-skill:not(.dos-skill-untrained):hover {
+  border-color: var(--cyan-50);
+  background: var(--bg-card);
+}
+
+.dos-skill-untrained {
+  opacity: 0.45;
+}
+
+.dos-skill-name {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.dos-skill-untrained .dos-skill-name {
+  color: var(--text-secondary);
+}
+
+.dos-skill-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.dos-skill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--border-bright);
+  background: transparent;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.dos-skill-dot.filled {
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 4px rgba(255, 182, 39, 0.4);
+}
+
+.dos-skill-neg {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ---- Lists (edges, foci, cyberware items) ---- */
+.dos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dos-list-item {
+  padding: 0.5rem 0.65rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  border-left: 2px solid var(--border);
+}
+
+.dos-list-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dos-list-desc {
   font-size: 0.75rem;
   color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 0.2rem;
+}
+
+.dos-focus-lvl {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--amber);
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--amber-20);
+  border-radius: 2px;
+  background: rgba(255, 182, 39, 0.08);
+}
+
+/* ---- Contacts ---- */
+.dos-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dos-contact-card {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.dos-contact-expanded {
+  border-left-color: var(--cyan-50);
+}
+
+.dos-contact-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dos-contact-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dos-contact-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.dos-contact-rel {
+  font-size: 0.65rem;
+  color: var(--cyan);
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
+  text-transform: capitalize;
+}
+
+.dos-contact-toggle {
+  background: none;
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.dos-contact-toggle:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-50);
+}
+
+.dos-contact-abilities {
+  margin: 0.3rem 0 0;
+  padding-left: 1rem;
+  list-style: disc;
+}
+
+.dos-contact-abilities li {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.dos-contact-details {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dos-contact-detail {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.dos-contact-detail span {
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+
+.dos-contact-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.2rem 0 0;
   line-height: 1.4;
-  margin-top: 0.15rem;
-  display: block;
 }
 
-.dossier-specialty-block .sheet-gear-stats {
-  margin-top: 0.35rem;
+/* ---- Combat ---- */
+.dos-combat {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
 }
 
-/* Responsive dossier */
+.dos-combat-hp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 0.75rem 1rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--magenta-20);
+  border-radius: 3px;
+  position: relative;
+}
 
+.dos-combat-hp::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: radial-gradient(ellipse at center, var(--magenta-10), transparent 70%);
+  pointer-events: none;
+}
+
+.dos-combat-hp-label {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--magenta);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.dos-combat-hp-value {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--magenta);
+  line-height: 1;
+  position: relative;
+  text-shadow: 0 0 20px var(--magenta-50);
+}
+
+.dos-combat-stats {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.dos-combat-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.4rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+
+.dos-combat-stat-label {
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dos-combat-stat-value {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.2;
+}
+
+/* ---- Saving Throws ---- */
+.dos-saves {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.dos-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.25rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+
+.dos-save-val {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1.2;
+}
+
+.dos-save-label {
+  font-size: 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---- Defenses ---- */
+.dos-armor-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--amber);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.03em;
+}
+
+.dos-defense-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.dos-defense-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.25rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+
+.dos-defense-val {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.2;
+}
+
+.dos-defense-label {
+  font-size: 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ---- Weapons ---- */
+.dos-weapons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.6rem;
+}
+
+.dos-weapon-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  padding: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dos-weapon-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.dos-weapon-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dos-weapon-name {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.03em;
+}
+
+.dos-weapon-hit {
+  font-family: 'Rajdhani', var(--font-display), sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan-20);
+}
+
+.dos-weapon-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.dos-weapon-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.dos-weapon-stat-label {
+  font-size: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dos-weapon-stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.dos-weapon-stat-trauma .dos-weapon-stat-value {
+  color: var(--magenta);
+}
+
+/* ---- Gear blocks ---- */
+.dos-gear-block {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dos-gear-block:last-child {
+  border-bottom: none;
+}
+
+.dos-gear-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dos-gear-type {
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: var(--cyan);
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dos-gear-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0.15rem 0 0;
+}
+
+.dos-gear-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+
+.dos-gear-pill {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  padding: 0.1rem 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-primary);
+}
+
+.dos-cyber-pkg {
+  margin-bottom: 0.75rem;
+}
+
+.dos-cyber-pkg-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dos-cyber-meta {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ---- Responsive dossier ---- */
 @media (max-width: 768px) {
-  .dossier-grid {
+  .dos-grid {
     grid-template-columns: 1fr;
   }
 
-  .dossier-combat-grid {
+  .dos {
+    padding: 1rem;
+  }
+
+  .dos-name {
+    font-size: 1.5rem;
+  }
+
+  .dos-combat {
+    flex-direction: column;
+  }
+
+  .dos-combat-hp {
+    flex-direction: row;
+    gap: 0.75rem;
+    min-width: unset;
+  }
+
+  .dos-saves {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .dossier {
-    padding: 1rem;
+  .dos-defense-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dos-weapons {
+    grid-template-columns: 1fr;
   }
 }
