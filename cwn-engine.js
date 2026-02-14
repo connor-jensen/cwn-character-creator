@@ -638,7 +638,7 @@ export const SPECIALTY_ITEMS = [
   {
     name: "Advanced Sword", category: "weapon", specialty: true,
     description: "A high-tech blade with monomolecular edges. Deals high shock damage even on a miss.",
-    stats: { damage: "1d10", shock: "3/AC 15", trauma: "1d8/x3", attribute: "Str", enc: 1, conceal: "subtle" },
+    stats: { damage: "1d10", shock: "3/AC 15", trauma: "1d8/x3", attribute: "Str", enc: 1, conceal: "obvious" },
     prereqs: { attributes: { strength: 0 }, skills: ["Fight"] },
   },
   {

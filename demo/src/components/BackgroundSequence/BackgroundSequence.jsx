@@ -666,6 +666,27 @@ export default function BackgroundSequence({ char, onComplete }) {
                       }}
                       onClick={isPickable ? () => setSelectedBg(b.name) : undefined}
                     >
+                      {isPickable && (
+                        <span className="bg-select-bar">SELECT</span>
+                      )}
+                      <AnimatePresence>
+                        {isSelected && isPickable && (
+                          <motion.button
+                            key="inline-confirm"
+                            className="bg-inline-confirm"
+                            initial={{ clipPath: 'polygon(100% 0, 100% 0, 100% 100%, 100% 100%)' }}
+                            animate={{ clipPath: 'polygon(0% 0, 100% 0, 100% 100%, -15% 100%)' }}
+                            exit={{ clipPath: 'polygon(100% 0, 100% 0, 100% 100%, 100% 100%)' }}
+                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePickBg(b.name);
+                            }}
+                          >
+                            CONFIRM
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
                       {!isExpanded && (
                         <div className="bg-item-row">
                           <span
@@ -810,25 +831,6 @@ export default function BackgroundSequence({ char, onComplete }) {
             </AnimatePresence>
           </div>
 
-          <AnimatePresence>
-            {selectedBg && !confirmedBg && (
-              <motion.div
-                key="bg-confirm"
-                className="bg-confirm-wrap"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.25 }}
-              >
-                <button
-                  className="btn-action"
-                  onClick={() => handlePickBg(selectedBg)}
-                >
-                  <span className="btn-prompt">&gt;_</span> Confirm {selectedBg}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       )}
 

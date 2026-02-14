@@ -127,8 +127,8 @@
   transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.bg-item-pickable::after {
-  content: 'SELECT';
+.bg-select-bar,
+.bg-inline-confirm {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -139,10 +139,17 @@
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.15em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.bg-select-bar {
   color: var(--bg-deep);
   background: var(--cyan);
   transform: translateY(100%);
   transition: transform 0.25s ease;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .bg-item-pickable:hover {
@@ -150,7 +157,11 @@
   transform: translateY(-2px);
 }
 
-.bg-item-pickable:hover::after {
+.bg-item-pickable:hover .bg-select-bar {
+  transform: translateY(0);
+}
+
+.bg-item-selected .bg-select-bar {
   transform: translateY(0);
 }
 
@@ -158,8 +169,16 @@
   box-shadow: 0 0 20px rgba(255, 182, 39, 0.15), 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
-.bg-item-selected::after {
-  transform: translateY(100%) !important;
+.bg-inline-confirm {
+  color: var(--bg-deep);
+  background: var(--amber);
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.bg-inline-confirm:hover {
+  background: #ffcc44;
 }
 
 .bg-confirm-wrap {

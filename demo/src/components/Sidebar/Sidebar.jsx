@@ -121,7 +121,7 @@ export default function Sidebar({ char, isFullWidth }) {
                       </strong>
                       {data && (
                         <span className="sheet-item-desc">
-                          {data.level_1}
+                          {data.level_1_full || data.level_1}
                         </span>
                       )}
                     </div>

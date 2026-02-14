@@ -352,7 +352,7 @@ export default function App() {
                           </span>
                           <h3>{focus.name}</h3>
                           <p className="offer-card-desc">{focus.description}</p>
-                          <span className="offer-card-detail">{focus.level_1}</span>
+                          <span className="offer-card-detail">{focus.level_1_full}</span>
                         </>
                       )}
                       onComplete={(name) => handlePickFocus(name)}

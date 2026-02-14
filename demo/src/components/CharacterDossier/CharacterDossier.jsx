@@ -129,7 +129,7 @@ export default function CharacterDossier({ char }) {
                     <span className="dos-skill-name">{name}</span>
                     {trained ? (
                       <span className="dos-skill-dots">
-                        {[0, 1, 2, 3].map((i) => (
+                        {[1, 2, 3, 4].map((i) => (
                           <span key={i} className={`dos-skill-dot${i <= lvl ? " filled" : ""}`} />
                         ))}
                       </span>
@@ -168,7 +168,7 @@ export default function CharacterDossier({ char }) {
                         {f.name}
                         <span className="dos-focus-lvl">L{f.level}</span>
                       </div>
-                      {data && <div className="dos-list-desc">{data.level_1}</div>}
+                      {data && <div className="dos-list-desc">{data.level_1_full || data.level_1}</div>}
                     </div>
                   );
                 })}
