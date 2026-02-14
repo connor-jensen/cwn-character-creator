@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
+import ConfirmButton from "../ConfirmButton";
 import "./SelectionSequence.css";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -195,26 +196,12 @@ export default function SelectionSequence({
           </AnimatePresence>
         </div>
 
-        <AnimatePresence>
-          {selectedName && !confirmedName && (
-            <motion.div
-              key="confirm"
-              className="bg-confirm-wrap"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.25 }}
-            >
-              <button
-                className="btn-action"
-                onClick={() => handleConfirm(selectedName)}
-              >
-                <span className="btn-prompt">&gt;_</span> Confirm{" "}
-                {selectedName}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ConfirmButton
+          isVisible={!!selectedName && !confirmedName}
+          label={`Confirm ${selectedName}`}
+          onClick={() => handleConfirm(selectedName)}
+          duration={0.25}
+        />
       </motion.div>
     </div>
   );

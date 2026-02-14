@@ -174,12 +174,6 @@
   padding: 1rem 0;
 }
 
-.gear-confirm-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.25rem;
-}
-
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {

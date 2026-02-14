@@ -105,3 +105,46 @@ export function fileHash(name) {
 export function attrPercent(score) {
   return Math.max(0, Math.min(100, ((score - 3) / 15) * 100));
 }
+
+export function computeDefenses(char) {
+  const dexMod = char.attributes.dexterity.mod;
+  let meleeAC = 10;
+  let rangedAC = 10;
+  let armorSoak = 0;
+  let traumaTarget = char.traumaTarget;
+
+  for (const item of char.inventory) {
+    if (item.category === "armor") {
+      if (item.specialty) {
+        if (item.stats.meleeAC) meleeAC = Math.max(meleeAC, item.stats.meleeAC);
+        if (item.stats.rangedAC) rangedAC = Math.max(rangedAC, item.stats.rangedAC);
+        if (item.stats.meleeACBonus) meleeAC += item.stats.meleeACBonus;
+        if (item.stats.rangedACBonus) rangedAC += item.stats.rangedACBonus;
+        if (item.stats.soak) armorSoak += item.stats.soak;
+        if (item.stats.traumaTargetMod) traumaTarget += item.stats.traumaTargetMod;
+      } else {
+        if (item.meleeAC) meleeAC = Math.max(meleeAC, item.meleeAC);
+        if (item.rangedAC) rangedAC = Math.max(rangedAC, item.rangedAC);
+        if (item.soak) armorSoak += item.soak;
+        if (item.traumaMod) traumaTarget += item.traumaMod;
+      }
+    }
+  }
+
+  meleeAC += dexMod;
+  rangedAC += dexMod;
+  const totalSoak = char.damageSoak + armorSoak;
+  const armorName = char.inventory.filter((i) => i.category === "armor").map((a) => a.name).join(" + ") || "Unarmored";
+
+  return { meleeAC, rangedAC, totalSoak, traumaTarget, armorName };
+}
+
+export function computeSystemStrain(char) {
+  let used = char.cyberwarePackage?.totalSystemStrain || 0;
+  for (const item of char.inventory) {
+    if (item.specialty && item.category === "cyberware" && item.stats.strain) {
+      used += item.stats.strain;
+    }
+  }
+  return { used, max: char.attributes.constitution.score };
+}

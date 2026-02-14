@@ -3,6 +3,8 @@ import {
   offerFoci,
   cyberwarePackages,
 } from "../../../../cwn-engine.js";
+import { getAvailableSkills } from "../../helpers/get-available-skills.js";
+import ChoiceGrid from "../ChoiceGrid";
 import "./PendingResolver.css";
 
 export default function PendingResolver({ item, char, onResolve }) {
@@ -14,9 +16,7 @@ export default function PendingResolver({ item, char, onResolve }) {
         ? ALL_SKILLS.filter((s) => !COMBAT_SKILLS.includes(s))
         : ALL_SKILLS;
 
-  const available = skills.filter(
-    (s) => char.skills[s] === undefined || char.skills[s] < 1
-  );
+  const available = getAvailableSkills(char, skills);
 
   if (item.type === "pickAttribute") {
     const attrs = ATTR_NAMES.filter(
@@ -24,23 +24,16 @@ export default function PendingResolver({ item, char, onResolve }) {
     );
     return (
       <div>
-        <p className="step-desc">
-          Pick an attribute to set to {item.setTo}:
-        </p>
-        <div className="choices">
-          {attrs.map((a) => (
-            <button
-              key={a}
-              className="btn-choice"
-              onClick={() => onResolve(a)}
-            >
-              {a}
-              <span className="btn-choice-sub">
-                currently {char.attributes[a].score}
-              </span>
-            </button>
-          ))}
-        </div>
+        <ChoiceGrid
+          prompt={
+            <p className="step-desc">
+              Pick an attribute to set to {item.setTo}:
+            </p>
+          }
+          items={attrs}
+          onSelect={onResolve}
+          renderSubText={(a) => `currently ${char.attributes[a].score}`}
+        />
       </div>
     );
   }
@@ -130,20 +123,15 @@ export default function PendingResolver({ item, char, onResolve }) {
 
   return (
     <div>
-      <p className="step-desc">
-        Pick a skill{item.reason ? ` (${item.reason})` : ""}:
-      </p>
-      <div className="choices">
-        {available.map((s) => (
-          <button
-            key={s}
-            className="btn-choice"
-            onClick={() => onResolve(s)}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      <ChoiceGrid
+        prompt={
+          <p className="step-desc">
+            Pick a skill{item.reason ? ` (${item.reason})` : ""}:
+          </p>
+        }
+        items={available}
+        onSelect={onResolve}
+      />
     </div>
   );
 }

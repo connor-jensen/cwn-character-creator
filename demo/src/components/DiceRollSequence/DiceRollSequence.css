@@ -389,13 +389,6 @@
   text-shadow: 0 0 8px var(--green-50);
 }
 
-/* Confirm button */
-.dice-confirm-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.25rem;
-}
-
 /* Lock animation for lowest attribute */
 @keyframes lockFlash {
   0% {

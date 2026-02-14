@@ -1,27 +1,10 @@
-import { useState, useCallback } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import {
-  createCharacter,
-  setStatToFourteen,
-  applyEdge,
-  applyFocus,
-  addBonusSkill,
-  resolvePending,
-  calculateDerivedStats,
-  equipStartingGear,
-  equipSpecialtyItem,
-  generateContact,
-  addGeneratedContact,
-  getContactAllotment,
-  offerEdges,
-  offerFoci,
-  updateModifiers,
   edges as allEdges,
   foci as allFoci,
 } from "../../../../cwn-engine.js";
-import { STEPS, ALL_SKILLS } from "../../constants.js";
-import { deepClone } from "../../helpers/deep-clone.js";
+import useCharacterCreation from "./useCharacterCreation.js";
 import Header from "../Header";
 import ProgressBar from "../ProgressBar";
 import Sidebar from "../Sidebar";
@@ -31,82 +14,35 @@ import DiceRollSequence from "../DiceRollSequence";
 import BackgroundSequence from "../BackgroundSequence";
 import SelectionSequence from "../SelectionSequence";
 import ContactSequence from "../ContactSequence";
+import ChoiceGrid from "../ChoiceGrid";
 import "./App.css";
 
 export default function App() {
-  const [char, setChar] = useState(createCharacter);
-  const [step, setStep] = useState(0);
-  const [rolling, setRolling] = useState(false);
-  const [offers, setOffers] = useState(null);
-  const [pendingQueue, setPendingQueue] = useState([]);
-  const [selectedWeapon, setSelectedWeapon] = useState(null);
-  const [selectedArmor, setSelectedArmor] = useState(null);
-  const [selectedSpecialty, setSelectedSpecialty] = useState(null);
-  const [generatedContacts, setGeneratedContacts] = useState(null);
-  const [rollMode, setRollMode] = useState("standard");
-
-  const currentStep = STEPS[step];
-
-  const offersForStep = (stepName, currentChar) => {
-    if (stepName === "pick_edge_1" || stepName === "pick_edge_2") {
-      return offerEdges(currentChar, 3);
-    }
-    if (stepName === "pick_focus") {
-      return offerFoci(currentChar, 3);
-    }
-    return null;
-  };
-
-  const advanceTo = useCallback((nextIdx, currentChar) => {
-    const nextStepName = STEPS[nextIdx];
-    setOffers(offersForStep(nextStepName, currentChar));
-
-    if (nextStepName === "generate_contacts") {
-      const allotment = getContactAllotment(currentChar.attributes.charisma.mod);
-      if (allotment.length === 0) {
-        setOffers(null);
-        setStep(nextIdx + 1);
-        return;
-      }
-      setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
-    }
-
-    setStep(nextIdx);
-  }, []);
-
-  const handleStepClick = (i) => {
-    const stepName = STEPS[i];
-    setOffers(offersForStep(stepName, char));
-    setRolling(false);
-    setPendingQueue([]);
-    setSelectedWeapon(null);
-    setSelectedArmor(null);
-    setSelectedSpecialty(null);
-    if (stepName === "generate_contacts") {
-      const allotment = getContactAllotment(char.attributes.charisma.mod);
-      if (allotment.length > 0) {
-        setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
-      } else {
-        setGeneratedContacts(null);
-      }
-    } else {
-      setGeneratedContacts(null);
-    }
-    setStep(i);
-  };
-
-  // --- Pending resolution ---
-  const handleResolvePending = (choice) => {
-    const next = deepClone(char);
-    const item = pendingQueue[0];
-    resolvePending(next, item, choice);
-    setChar(next);
-    const remaining = pendingQueue.slice(1);
-    setPendingQueue(remaining);
-    if (remaining.length === 0) {
-      advanceTo(step + 1, next);
-    }
-  };
+  const {
+    char, setChar,
+    step,
+    rolling, rollMode, setRollMode,
+    offers,
+    pendingQueue,
+    selectedWeapon, setSelectedWeapon,
+    selectedArmor, setSelectedArmor,
+    selectedSpecialty, setSelectedSpecialty,
+    generatedContacts,
+    currentStep,
+    availableSkills,
+    isFinalized,
+    handleStepClick,
+    handleResolvePending,
+    handleStartRoll,
+    handleRollComplete,
+    handleBackgroundComplete,
+    handlePickEdge,
+    handlePickFocus,
+    handleBonusSkill,
+    handleEquipGear,
+    handleContactsComplete,
+    handleFinish,
+  } = useCharacterCreation();
 
   if (pendingQueue.length > 0) {
     return (
@@ -132,89 +68,6 @@ export default function App() {
       </div>
     );
   }
-
-  // --- Step handlers ---
-
-  const handleStartRoll = () => setRolling(true);
-
-  const handleRollComplete = (rollData, bumpStat) => {
-    const next = deepClone(char);
-    for (const [attr, data] of Object.entries(rollData)) {
-      next.attributes[attr].score = data.score;
-    }
-    updateModifiers(next);
-    if (bumpStat) {
-      setStatToFourteen(next, bumpStat);
-    }
-    setChar(next);
-    setRolling(false);
-    advanceTo(step + 1, next);
-  };
-
-  const handleBackgroundComplete = (updatedChar) => {
-    setChar(updatedChar);
-    advanceTo(step + 1, updatedChar);
-  };
-
-  const handlePickEdge = (edgeName) => {
-    const next = deepClone(char);
-    const { pending } = applyEdge(next, edgeName);
-    setChar(next);
-    if (pending.length > 0) {
-      setPendingQueue(pending);
-    } else {
-      advanceTo(step + 1, next);
-    }
-  };
-
-  const handlePickFocus = (focusName) => {
-    const next = deepClone(char);
-    const { pending } = applyFocus(next, focusName);
-    setChar(next);
-    if (pending.length > 0) {
-      setPendingQueue(pending);
-    } else {
-      advanceTo(step + 1, next);
-    }
-  };
-
-  const handleBonusSkill = (skillName) => {
-    const next = deepClone(char);
-    addBonusSkill(next, skillName);
-    setChar(next);
-    advanceTo(step + 1, next);
-  };
-
-  const handleEquipGear = () => {
-    const next = deepClone(char);
-    equipStartingGear(next, selectedWeapon, selectedArmor);
-    equipSpecialtyItem(next, selectedSpecialty);
-    setChar(next);
-    advanceTo(step + 1, next);
-  };
-
-  const handleContactsComplete = (names) => {
-    if (!generatedContacts) return;
-    const next = deepClone(char);
-    for (let i = 0; i < generatedContacts.length; i++) {
-      const contact = { ...generatedContacts[i], name: names[i].trim() };
-      addGeneratedContact(next, contact);
-    }
-    setChar(next);
-    advanceTo(step + 1, next);
-  };
-
-  const handleFinish = () => {
-    const next = deepClone(char);
-    calculateDerivedStats(next);
-    setChar(next);
-  };
-
-  const availableSkills = ALL_SKILLS.filter(
-    (s) => char.skills[s] === undefined || char.skills[s] < 1
-  );
-
-  const isFinalized = currentStep === "done" && char.hp > 0;
 
   return (
     <div className="app">
@@ -283,37 +136,11 @@ export default function App() {
                 </div>
               )}
 
-              {/* --- Pick Edge 1 --- */}
-              {currentStep === "pick_edge_1" && (
-                <div className="step-panel" key="edge1">
-                  <div className="step-label">Step 03</div>
-                  <h2 className="step-title">Choose Edge (1 of 2)</h2>
-                  {offers && (
-                    <SelectionSequence
-                      allItems={allEdges}
-                      offeredItems={offers}
-                      poolLabel="Edge"
-                      showPoolDescription={false}
-                      renderCardContent={(edge, offerIdx) => (
-                        <>
-                          <span className="offer-card-id">
-                            #{String(offerIdx + 1).padStart(2, "0")}
-                          </span>
-                          <h3>{edge.name}</h3>
-                          <p className="offer-card-desc">{edge.description}</p>
-                        </>
-                      )}
-                      onComplete={(name) => handlePickEdge(name)}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* --- Pick Edge 2 --- */}
-              {currentStep === "pick_edge_2" && (
-                <div className="step-panel" key="edge2">
-                  <div className="step-label">Step 04</div>
-                  <h2 className="step-title">Choose Edge (2 of 2)</h2>
+              {/* --- Pick Edge (1 or 2) --- */}
+              {(currentStep === "pick_edge_1" || currentStep === "pick_edge_2") && (
+                <div className="step-panel" key={currentStep}>
+                  <div className="step-label">Step {currentStep === "pick_edge_1" ? "03" : "04"}</div>
+                  <h2 className="step-title">Choose Edge ({currentStep === "pick_edge_1" ? "1" : "2"} of 2)</h2>
                   {offers && (
                     <SelectionSequence
                       allItems={allEdges}
@@ -366,20 +193,15 @@ export default function App() {
                 <div className="step-panel" key="bonus">
                   <div className="step-label">Step 06</div>
                   <h2 className="step-title">Bonus Skill</h2>
-                  <p className="step-desc">
-                    Select one final skill to add to your operative&apos;s repertoire.
-                  </p>
-                  <div className="choices">
-                    {availableSkills.map((skill) => (
-                      <button
-                        key={skill}
-                        className="btn-choice"
-                        onClick={() => handleBonusSkill(skill)}
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
+                  <ChoiceGrid
+                    prompt={
+                      <p className="step-desc">
+                        Select one final skill to add to your operative&apos;s repertoire.
+                      </p>
+                    }
+                    items={availableSkills}
+                    onSelect={handleBonusSkill}
+                  />
                 </div>
               )}
 

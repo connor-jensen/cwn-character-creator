@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
-import { motion, AnimatePresence } from "motion/react";
 import {
   STARTING_WEAPONS,
   STARTING_KNIFE,
@@ -7,6 +5,7 @@ import {
   getAvailableSpecialtyItems,
 } from "../../../../cwn-engine.js";
 import { getSpecialtyStatPills } from "./GearSelection.helpers.js";
+import ConfirmButton from "../ConfirmButton";
 import "./GearSelection.css";
 
 function renderSpecialtyStats(item) {
@@ -166,21 +165,12 @@ export default function GearSelection({
         )}
       </div>
 
-      <AnimatePresence>
-        {selectedWeapon && selectedArmor && selectedSpecialty && (
-          <motion.div
-            className="gear-confirm-wrap"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.25 }}
-          >
-            <button className="btn-action" onClick={onConfirm}>
-              <span className="btn-prompt">&gt;_</span> Confirm Loadout
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmButton
+        isVisible={!!(selectedWeapon && selectedArmor && selectedSpecialty)}
+        label="Confirm Loadout"
+        onClick={onConfirm}
+        duration={0.25}
+      />
     </>
   );
 }

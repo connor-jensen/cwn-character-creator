@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import ConfirmButton from "../ConfirmButton";
 import "./ContactSequence.css";
 
 const DETAIL_ROWS = [
@@ -119,24 +120,13 @@ export default function ContactSequence({ contacts, onComplete }) {
       ))}
 
       {/* Confirm button after all contacts revealed and named */}
-      <AnimatePresence>
-        {allRevealed && (
-          <motion.div
-            className="contact-confirm-wrap"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            <button
-              className="btn-action"
-              disabled={!allNamed}
-              onClick={() => onCompleteRef.current(names)}
-            >
-              <span className="btn-prompt">&gt;_</span> Confirm Contacts
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmButton
+        isVisible={allRevealed}
+        label="Confirm Contacts"
+        onClick={() => onCompleteRef.current(names)}
+        disabled={!allNamed}
+        delay={0.3}
+      />
     </div>
   );
 }

@@ -5,53 +5,18 @@ import {
   foci as allFoci,
 } from "../../../../cwn-engine.js";
 import { ALL_SKILLS, ATTR_NAMES } from "../../constants.js";
-import { normalizeWeapon, fileHash, attrPercent } from "./CharacterDossier.helpers.js";
+import { normalizeWeapon, fileHash, attrPercent, computeDefenses, computeSystemStrain } from "./CharacterDossier.helpers.js";
 import SectionHeader from "./SectionHeader.jsx";
 import DossierContact from "./DossierContact.jsx";
+import GearBlock from "./GearBlock.jsx";
 import "./CharacterDossier.css";
 
 export default function CharacterDossier({ char }) {
   const bgObj = char.background && allBackgrounds.find((b) => b.name === char.background);
   const edgeObjs = char.edges.map((name) => allEdges.find((e) => e.name === name)).filter(Boolean);
 
-  const dexMod = char.attributes.dexterity.mod;
-  let effectiveMeleeAC = 10;
-  let effectiveRangedAC = 10;
-  let armorSoak = 0;
-  let effectiveTraumaTarget = char.traumaTarget;
-
-  for (const item of char.inventory) {
-    if (item.category === "armor") {
-      if (item.specialty) {
-        if (item.stats.meleeAC) effectiveMeleeAC = Math.max(effectiveMeleeAC, item.stats.meleeAC);
-        if (item.stats.rangedAC) effectiveRangedAC = Math.max(effectiveRangedAC, item.stats.rangedAC);
-        if (item.stats.meleeACBonus) effectiveMeleeAC += item.stats.meleeACBonus;
-        if (item.stats.rangedACBonus) effectiveRangedAC += item.stats.rangedACBonus;
-        if (item.stats.soak) armorSoak += item.stats.soak;
-        if (item.stats.traumaTargetMod) effectiveTraumaTarget += item.stats.traumaTargetMod;
-      } else {
-        if (item.meleeAC) effectiveMeleeAC = Math.max(effectiveMeleeAC, item.meleeAC);
-        if (item.rangedAC) effectiveRangedAC = Math.max(effectiveRangedAC, item.rangedAC);
-        if (item.soak) armorSoak += item.soak;
-        if (item.traumaMod) effectiveTraumaTarget += item.traumaMod;
-      }
-    }
-  }
-
-  effectiveMeleeAC += dexMod;
-  effectiveRangedAC += dexMod;
-  const totalSoak = char.damageSoak + armorSoak;
-
-  let systemStrainUsed = char.cyberwarePackage?.totalSystemStrain || 0;
-  for (const item of char.inventory) {
-    if (item.specialty && item.category === "cyberware" && item.stats.strain) {
-      systemStrainUsed += item.stats.strain;
-    }
-  }
-  const systemStrainMax = char.attributes.constitution.score;
-
-  const armorItems = char.inventory.filter((i) => i.category === "armor");
-  const armorName = armorItems.map((a) => a.name).join(" + ") || "Unarmored";
+  const { meleeAC, rangedAC, totalSoak, traumaTarget, armorName } = computeDefenses(char);
+  const systemStrain = computeSystemStrain(char);
 
   const weapons = char.inventory.filter((i) => i.category === "weapon");
   const hackingItems = char.inventory.filter((i) => i.specialty && i.category === "hacking");
@@ -210,7 +175,7 @@ export default function CharacterDossier({ char }) {
                 </div>
                 <div className="dos-combat-stat">
                   <span className="dos-combat-stat-label">SYS STRAIN</span>
-                  <span className="dos-combat-stat-value">{systemStrainUsed}/{systemStrainMax}</span>
+                  <span className="dos-combat-stat-value">{systemStrain.used}/{systemStrain.max}</span>
                 </div>
               </div>
             </div>
@@ -238,11 +203,11 @@ export default function CharacterDossier({ char }) {
             <div className="dos-armor-name">{armorName}</div>
             <div className="dos-defense-row">
               <div className="dos-defense-stat">
-                <span className="dos-defense-val">{effectiveMeleeAC}</span>
+                <span className="dos-defense-val">{meleeAC}</span>
                 <span className="dos-defense-label">Melee AC</span>
               </div>
               <div className="dos-defense-stat">
-                <span className="dos-defense-val">{effectiveRangedAC}</span>
+                <span className="dos-defense-val">{rangedAC}</span>
                 <span className="dos-defense-label">Ranged AC</span>
               </div>
               <div className="dos-defense-stat">
@@ -250,7 +215,7 @@ export default function CharacterDossier({ char }) {
                 <span className="dos-defense-label">Soak</span>
               </div>
               <div className="dos-defense-stat">
-                <span className="dos-defense-val">{effectiveTraumaTarget}</span>
+                <span className="dos-defense-val">{traumaTarget}</span>
                 <span className="dos-defense-label">Trauma Tgt</span>
               </div>
             </div>
@@ -325,15 +290,15 @@ export default function CharacterDossier({ char }) {
                 </div>
               )}
               {cyberwareSpecialty.map((item) => (
-                <div key={item.name} className="dos-gear-block">
-                  <div className="dos-gear-name">{item.name}</div>
-                  <p className="dos-gear-desc">{item.description}</p>
-                  <div className="dos-gear-pills">
-                    {item.stats.strain !== undefined && <span className="dos-gear-pill">Strain {item.stats.strain}</span>}
-                    {item.stats.concealment && <span className="dos-gear-pill">Conceal {item.stats.concealment}</span>}
-                    {item.stats.effect && <span className="dos-gear-pill">{item.stats.effect}</span>}
-                  </div>
-                </div>
+                <GearBlock
+                  key={item.name}
+                  item={item}
+                  pills={[
+                    item.stats.strain !== undefined && ["Strain", item.stats.strain],
+                    item.stats.concealment && ["Conceal", item.stats.concealment],
+                    item.stats.effect && ["", item.stats.effect],
+                  ].filter(Boolean)}
+                />
               ))}
             </section>
           )}
@@ -342,16 +307,16 @@ export default function CharacterDossier({ char }) {
             <section className="dos-section">
               <SectionHeader num="11" label="Cyberdeck" />
               {hackingItems.map((item) => (
-                <div key={item.name} className="dos-gear-block">
-                  <div className="dos-gear-name">{item.name}</div>
-                  <p className="dos-gear-desc">{item.description}</p>
-                  <div className="dos-gear-pills">
-                    {item.stats.memory && <span className="dos-gear-pill">MEM {item.stats.memory}</span>}
-                    {item.stats.shielding && <span className="dos-gear-pill">Shield {item.stats.shielding}</span>}
-                    {item.stats.cpu && <span className="dos-gear-pill">CPU {item.stats.cpu}</span>}
-                    {item.stats.bonusAccess && <span className="dos-gear-pill">Access +{item.stats.bonusAccess}</span>}
-                  </div>
-                </div>
+                <GearBlock
+                  key={item.name}
+                  item={item}
+                  pills={[
+                    item.stats.memory && ["MEM", item.stats.memory],
+                    item.stats.shielding && ["Shield", item.stats.shielding],
+                    item.stats.cpu && ["CPU", item.stats.cpu],
+                    item.stats.bonusAccess && ["Access", `+${item.stats.bonusAccess}`],
+                  ].filter(Boolean)}
+                />
               ))}
             </section>
           )}
@@ -360,22 +325,20 @@ export default function CharacterDossier({ char }) {
             <section className="dos-section">
               <SectionHeader num="12" label="Vehicles & Drones" />
               {vehicleDroneItems.map((item) => (
-                <div key={item.name} className="dos-gear-block">
-                  <div className="dos-gear-name">
-                    {item.name}
-                    <span className="dos-gear-type">{item.category}</span>
-                  </div>
-                  <p className="dos-gear-desc">{item.description}</p>
-                  <div className="dos-gear-pills">
-                    {item.stats.hp && <span className="dos-gear-pill">HP {item.stats.hp}</span>}
-                    {item.stats.ac && <span className="dos-gear-pill">AC {item.stats.ac}</span>}
-                    {item.stats.speed !== undefined && <span className="dos-gear-pill">Speed {item.stats.speed}</span>}
-                    {item.stats.move && <span className="dos-gear-pill">Move {item.stats.move}</span>}
-                    {item.stats.traumaTarget && <span className="dos-gear-pill">Trauma Tgt {item.stats.traumaTarget}</span>}
-                    {item.stats.crew && <span className="dos-gear-pill">Crew {item.stats.crew}</span>}
-                    {item.stats.fittings !== undefined && <span className="dos-gear-pill">Fittings {item.stats.fittings}</span>}
-                  </div>
-                </div>
+                <GearBlock
+                  key={item.name}
+                  item={item}
+                  typeLabel={item.category}
+                  pills={[
+                    item.stats.hp && ["HP", item.stats.hp],
+                    item.stats.ac && ["AC", item.stats.ac],
+                    item.stats.speed !== undefined && ["Speed", item.stats.speed],
+                    item.stats.move && ["Move", item.stats.move],
+                    item.stats.traumaTarget && ["Trauma Tgt", item.stats.traumaTarget],
+                    item.stats.crew && ["Crew", item.stats.crew],
+                    item.stats.fittings !== undefined && ["Fittings", item.stats.fittings],
+                  ].filter(Boolean)}
+                />
               ))}
             </section>
           )}
@@ -384,15 +347,15 @@ export default function CharacterDossier({ char }) {
             <section className="dos-section">
               <SectionHeader num="13" label="Tech" />
               {techItems.map((item) => (
-                <div key={item.name} className="dos-gear-block">
-                  <div className="dos-gear-name">{item.name}</div>
-                  <p className="dos-gear-desc">{item.description}</p>
-                  <div className="dos-gear-pills">
-                    {item.stats.effect && <span className="dos-gear-pill">{item.stats.effect}</span>}
-                    {item.stats.enc && <span className="dos-gear-pill">ENC {item.stats.enc}</span>}
-                    {item.stats.special && <span className="dos-gear-pill">{item.stats.special}</span>}
-                  </div>
-                </div>
+                <GearBlock
+                  key={item.name}
+                  item={item}
+                  pills={[
+                    item.stats.effect && ["", item.stats.effect],
+                    item.stats.enc && ["ENC", item.stats.enc],
+                    item.stats.special && ["", item.stats.special],
+                  ].filter(Boolean)}
+                />
               ))}
             </section>
           )}

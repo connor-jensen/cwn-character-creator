@@ -181,12 +181,6 @@
   background: #ffcc44;
 }
 
-.bg-confirm-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.25rem;
-}
-
 .bg-table-section {
   display: flex;
   gap: 1rem;
