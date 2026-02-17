@@ -1,6 +1,5 @@
-import { COMBAT_SKILLS } from "../../constants.js";
+import { ALL_SKILLS, COMBAT_SKILLS } from "../../constants.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
-import ChoiceGrid from "../ChoiceGrid";
 
 export default function LearningResolver({
   resolveInfo,
@@ -11,41 +10,53 @@ export default function LearningResolver({
 }) {
   if (!resolveInfo) return null;
 
+  let prompt;
+  let eligible;
+
   if (resolveInfo.type === "learning_redirect") {
-    return (
-      <ChoiceGrid
-        prompt={
-          <p className="step-desc">
-            Rolled <strong className="growth-result">{resolveInfo.original}</strong>{" "}
-            but it&apos;s already at cap. Pick any other skill:
-          </p>
-        }
-        items={availableSkills}
-        selectedChoice={selectedChoice}
-        onSelect={onSelect}
-      />
+    prompt = (
+      <p className="step-desc">
+        Rolled <strong className="growth-result">{resolveInfo.original}</strong>{" "}
+        but it&apos;s already at cap. Pick any other skill:
+      </p>
     );
+    eligible = new Set(availableSkills);
+  } else {
+    const skills =
+      resolveInfo.type === "learning_combat"
+        ? getAvailableSkills(workingChar, COMBAT_SKILLS)
+        : availableSkills;
+    prompt = (
+      <p className="step-desc">
+        Rolled:{" "}
+        <strong className="growth-result">
+          {resolveInfo.type === "learning_combat" ? "Any Combat" : "Any Skill"}
+        </strong>{" "}
+        &mdash; pick a skill:
+      </p>
+    );
+    eligible = new Set(skills);
   }
 
-  const skills =
-    resolveInfo.type === "learning_combat"
-      ? getAvailableSkills(workingChar, COMBAT_SKILLS)
-      : availableSkills;
-
   return (
-    <ChoiceGrid
-      prompt={
-        <p className="step-desc">
-          Rolled:{" "}
-          <strong className="growth-result">
-            {resolveInfo.type === "learning_combat" ? "Any Combat" : "Any Skill"}
-          </strong>{" "}
-          &mdash; pick a skill:
-        </p>
-      }
-      items={skills}
-      selectedChoice={selectedChoice}
-      onSelect={onSelect}
-    />
+    <>
+      {prompt}
+      <div className="skill-pick-grid">
+        {ALL_SKILLS.map((skill) => {
+          const isEligible = eligible.has(skill);
+          const isSelected = selectedChoice === skill;
+          return (
+            <button
+              key={skill}
+              className={`btn-choice${isSelected ? " btn-choice-selected" : ""}${!isEligible ? " btn-choice-disabled" : ""}`}
+              disabled={!isEligible}
+              onClick={() => onSelect(skill)}
+            >
+              {skill}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }

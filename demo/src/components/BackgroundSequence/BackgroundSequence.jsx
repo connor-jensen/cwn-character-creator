@@ -74,7 +74,7 @@ export default function BackgroundSequence({ char, onComplete }) {
     selectedResolveChoice, setSelectedResolveChoice,
     rollOutcomes,
     handleConfirmResolve,
-    resolveGrowthSplit,
+    resolveGrowthAllocate,
   } = useRollPhase({ phase, setPhase, wcRef, setWorkingChar, bgDataRef, preRolls });
 
   /* ---- phase helpers (delegated to helpers module) ---- */
@@ -289,7 +289,7 @@ export default function BackgroundSequence({ char, onComplete }) {
       <ResolvePanel
         isVisible={phase === "growth_resolve"}
         motionKey="growth-resolve"
-        showConfirm={!!selectedResolveChoice}
+        showConfirm={resolveInfo?.type !== "growth_stat" && resolveInfo?.type !== "growth_compound_stat" && !!selectedResolveChoice}
         confirmLabel={`Confirm ${selectedResolveChoice}`}
         onConfirm={handleConfirmResolve}
       >
@@ -300,7 +300,7 @@ export default function BackgroundSequence({ char, onComplete }) {
           availableSkills={availableSkills}
           selectedChoice={selectedResolveChoice}
           onSelect={setSelectedResolveChoice}
-          onSplitApply={resolveGrowthSplit}
+          onAllocate={resolveGrowthAllocate}
         />
       </ResolvePanel>
 

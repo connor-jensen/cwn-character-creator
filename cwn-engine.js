@@ -365,10 +365,10 @@ export function applyFocus(char, focusName, level = 1) {
       grantSkill(char, "Sneak", pending);
       break;
     case "Pop Idol":
-      grantSkill(char, "Talk", pending);
+      pending.push({ type: "pickSkill", category: "any", options: ["Talk", "Exert"] });
       break;
     case "Roamer":
-      grantSkill(char, "Exert", pending);
+      pending.push({ type: "pickSkill", category: "any", options: ["Exert", "Notice", "Know"] });
       grantSkill(char, "Drive", pending);
       break;
     case "Safe Haven":
@@ -441,7 +441,16 @@ const MENTAL_STATS = ["intelligence", "wisdom", "charisma"];
 const ALL_STATS = [...PHYSICAL_STATS, ...MENTAL_STATS];
 
 export function resolveGrowthRoll(char, growthEntry, choices) {
-  if (growthEntry.startsWith("+")) {
+  if (growthEntry === "+1 Physical, +1 Mental") {
+    // Compound: one physical +1 and one mental +1
+    if (!choices || !choices.physical || !choices.mental) {
+      throw new Error(
+        `Growth entry "${growthEntry}" requires choices.physical and choices.mental`
+      );
+    }
+    applyStatBonus(char, choices.physical, 1, "Physical");
+    applyStatBonus(char, choices.mental, 1, "Mental");
+  } else if (growthEntry.startsWith("+")) {
     // Attribute bonus
     const match = growthEntry.match(/^\+(\d)\s+(.+)$/);
     if (!match) throw new Error(`Cannot parse growth entry: ${growthEntry}`);
@@ -615,105 +624,71 @@ export const SPECIALTY_ITEMS = [
     name: "Reinforced Longcoat", category: "armor", specialty: true,
     description: "Subtle plates and weaves disguised as fashion. Best for high-Dex operators who want to look normal.",
     stats: { rangedAC: 15, meleeAC: 13, soak: 5, traumaTargetMod: 1, enc: 1, conceal: "subtle" },
-    prereqs: { attributes: { dexterity: 0 }, skills: [] },
   },
   {
     name: "Impact Jacket", category: "armor", specialty: true,
     description: "Built to absorb the impact of various contact sports, extreme athletics, vehicle races, they function as armor but are not subtle.",
     stats: { rangedAC: 12, meleeAC: 14, soak: 8, traumaTargetMod: 1, enc: 1, conceal: "obvious" },
-    prereqs: { attributes: { constitution: 0 }, skills: [] },
   },
   {
     name: "Rifle", category: "weapon", specialty: true,
     description: "The standard high-powered firearm. Essential for long-range combat experts.",
     stats: { damage: "1d10+2", range: "200/400", mag: 6, trauma: "1d8/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
-    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
   },
   {
     name: "Shotgun", category: "weapon", specialty: true,
     description: "Brutal close-quarters power. Multiple dice make damage more consistent.",
     stats: { damage: "3d4", range: "10/30", mag: 2, trauma: "1d10/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
-    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
   },
   {
     name: "Advanced Sword", category: "weapon", specialty: true,
     description: "A high-tech blade with monomolecular edges. Deals high shock damage even on a miss.",
     stats: { damage: "1d10", shock: "3/AC 15", trauma: "1d8/x3", attribute: "Str", enc: 1, conceal: "obvious" },
-    prereqs: { attributes: { strength: 0 }, skills: ["Fight"] },
   },
   {
     name: "Advanced Bow", category: "weapon", specialty: true,
     description: "Silent and huge crit potential, but requires your move action to reload unless you have Shoot-1",
     stats: { damage: "1d8", range: "30/200", mag: 1, trauma: "1d8+1/x3", attribute: "Dex", enc: 2, conceal: "obvious" },
-    prereqs: { attributes: { dexterity: 0 }, skills: ["Shoot"] },
   },
   {
     name: "Cranial Jack", category: "cyberware", specialty: true,
     description: "Essential for professional hackers. Allows you to plug directly into the net and vehicles.",
     stats: { strain: 0.25, concealment: "Touch", effect: "Direct neural link to decks/hardware" },
-    prereqs: { attributes: { intelligence: 0, constitution: 0 }, skills: [] },
   },
   {
     name: "Scrap Cyberdeck", category: "hacking", specialty: true,
     description: "A basic, custom-built hacking rig. Necessary for anyone using Verbs and Subjects in cyberspace.",
     stats: { memory: 8, shielding: 5, cpu: 2, bonusAccess: 1, enc: 1 },
-    prereqs: { attributes: { intelligence: 0 }, skills: ["Program"] },
   },
   {
     name: "Goggles, IR", category: "tech", specialty: true,
-    description: "See heat signatures through smoke or darkness. Requires high perception to interpret correctly.",
+    description: "See heat signatures through smoke or darkness.",
     stats: { effect: "Thermal vision up to 50m", enc: 1 },
-    prereqs: { attributes: { wisdom: 0 }, skills: ["Notice"] },
   },
   {
     name: "Motorcycle", category: "vehicle", specialty: true,
-    description: "A fast, nimble bike for the street. High Dexterity is required to survive crashes.",
+    description: "A fast, nimble bike for the street.",
     stats: { hp: 10, ac: 13, speed: 1, traumaTarget: 10, crew: 1, size: "S" },
-    prereqs: { attributes: { dexterity: 0 }, skills: ["Drive"] },
   },
   {
     name: "BanTech Roach Drone", category: "drone", specialty: true,
-    description: "Small wheeled drone. Requires Intelligence and Drive skill to pilot remotely for scouting.",
+    description: "Small wheeled drone for remote scouting.",
     stats: { hp: 8, ac: 13, move: "10m ground", fittings: 3, hardpoints: 0, enc: 3 },
-    prereqs: { attributes: { intelligence: 0 }, skills: ["Drive"] },
   },
   {
     name: "Kit, Cyberdoc", category: "tech", specialty: true,
-    description: "Specialized medical kit. You must have Heal skill to use this for repairing your team's chrome.",
+    description: "Specialized medical kit for repairing your team's chrome.",
     stats: { effect: "Maintenance/repair of cyberware", enc: 2 },
-    prereqs: { attributes: { intelligence: 0 }, skills: ["Heal"] },
   },
 ];
 
-export function getAvailableSpecialtyItems(char) {
-  return SPECIALTY_ITEMS.filter((item) => {
-    const { attributes = {}, skills = [] } = item.prereqs;
-    for (const [attr, requiredMod] of Object.entries(attributes)) {
-      if (!char.attributes[attr] || char.attributes[attr].mod < requiredMod) return false;
-    }
-    for (const skill of skills) {
-      if (char.skills[skill] === undefined) return false;
-    }
-    return true;
-  });
+export function getAvailableSpecialtyItems() {
+  return [...SPECIALTY_ITEMS];
 }
 
 export function equipSpecialtyItem(char, itemName) {
   const item = SPECIALTY_ITEMS.find((i) => i.name === itemName);
   if (!item) throw new Error(`Unknown specialty item: ${itemName}`);
-
-  // Validate prereqs defensively
-  const { attributes = {}, skills = [] } = item.prereqs;
-  for (const [attr, requiredMod] of Object.entries(attributes)) {
-    if (!char.attributes[attr] || char.attributes[attr].mod < requiredMod) {
-      throw new Error(`Prerequisite not met: ${attr} mod must be >= ${requiredMod}`);
-    }
-  }
-  for (const skill of skills) {
-    if (char.skills[skill] === undefined) {
-      throw new Error(`Prerequisite not met: requires ${skill} skill`);
-    }
-  }
 
   // Idempotent: clear previous specialty item
   char.inventory = char.inventory.filter((i) => !i.specialty);

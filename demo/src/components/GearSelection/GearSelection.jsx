@@ -2,7 +2,7 @@ import {
   STARTING_WEAPONS,
   STARTING_KNIFE,
   STARTING_ARMOR,
-  getAvailableSpecialtyItems,
+  SPECIALTY_ITEMS,
 } from "../../../../cwn-engine.js";
 import { getSpecialtyStatPills } from "./GearSelection.helpers.js";
 import ConfirmButton from "../ConfirmButton";
@@ -24,7 +24,6 @@ function renderSpecialtyStats(item) {
 }
 
 export default function GearSelection({
-  char,
   selectedWeapon,
   selectedArmor,
   selectedSpecialty,
@@ -33,7 +32,6 @@ export default function GearSelection({
   onSpecialtySelect,
   onConfirm,
 }) {
-  const availableSpecialty = getAvailableSpecialtyItems(char);
 
   return (
     <>
@@ -133,36 +131,20 @@ export default function GearSelection({
 
       <div className="gear-specialty-section">
         <div className="gear-section-label">Choose Specialty Item</div>
-        {availableSpecialty.length === 0 ? (
-          <p className="gear-specialty-empty">
-            No specialty items available — your current skills and attributes don&apos;t meet any prerequisites.
-          </p>
-        ) : (
-          <div className="gear-specialty-grid">
-            {availableSpecialty.map((item) => (
-              <button
-                key={item.name}
-                className={`gear-card${selectedSpecialty === item.name ? " gear-card-selected" : ""}`}
-                onClick={() => onSpecialtySelect(item.name)}
-              >
-                <span className="gear-card-category">{item.category}</span>
-                <h3>{item.name}</h3>
-                <p className="gear-card-hint">{item.description}</p>
-                {renderSpecialtyStats(item)}
-                <div className="gear-prereq-pills">
-                  {Object.entries(item.prereqs.attributes).map(([attr, mod]) => (
-                    <span key={attr} className="gear-prereq-pill">
-                      {attr.slice(0, 3).toUpperCase()} {mod >= 0 ? "+" : ""}{mod}
-                    </span>
-                  ))}
-                  {item.prereqs.skills.map((skill) => (
-                    <span key={skill} className="gear-prereq-pill">{skill}</span>
-                  ))}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="gear-specialty-grid">
+          {SPECIALTY_ITEMS.map((item) => (
+            <button
+              key={item.name}
+              className={`gear-card${selectedSpecialty === item.name ? " gear-card-selected" : ""}`}
+              onClick={() => onSpecialtySelect(item.name)}
+            >
+              <span className="gear-card-category">{item.category}</span>
+              <h3>{item.name}</h3>
+              <p className="gear-card-hint">{item.description}</p>
+              {renderSpecialtyStats(item)}
+            </button>
+          ))}
+        </div>
       </div>
 
       <ConfirmButton

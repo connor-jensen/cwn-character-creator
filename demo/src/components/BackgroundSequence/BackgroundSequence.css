@@ -348,18 +348,143 @@
   padding: 1.25rem;
 }
 
-.bg-resolve-split-label {
+/* -- Stat Allocator -- */
+
+.alloc-remaining {
+  display: inline-block;
+  margin-left: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.alloc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.alloc-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 2px;
 }
 
-.bg-resolve-split-label input[type="checkbox"] {
-  accent-color: var(--cyan);
+.alloc-row:nth-child(even) {
+  background: var(--bg-deep);
+}
+
+.alloc-stat-name {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  width: 2.5rem;
+}
+
+.alloc-stat-score {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 1.5rem;
+  text-align: right;
+}
+
+.alloc-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  color: var(--text-bright);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.alloc-btn:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.alloc-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.alloc-added {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 1.5rem;
+  text-align: center;
+}
+
+.alloc-added-active {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.alloc-preview {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber);
+  margin-left: 0.25rem;
+}
+
+/* Compound allocator (two groups side by side) */
+
+.alloc-compound {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.alloc-group {
+  flex: 1;
+}
+
+.alloc-group-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.35rem;
+}
+
+.alloc-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.alloc-row-btn:hover:not(:disabled) {
+  border-color: var(--border);
+}
+
+.alloc-row-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.alloc-row-selected {
+  border-color: var(--cyan) !important;
+  background: var(--bg-deep);
 }
 
 /* -- Card-integrated die area -- */
@@ -423,6 +548,26 @@
   opacity: 0.8;
 }
 
+/* -- Skill picker grid (2 rows × 6 columns) -- */
+
+.skill-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.skill-pick-grid .btn-choice-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.skill-pick-grid .btn-choice-disabled:hover {
+  border-color: var(--border);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  box-shadow: none;
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {
@@ -436,5 +581,9 @@
 
   .bg-roll-die-area {
     padding: 0.5rem;
+  }
+
+  .skill-pick-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

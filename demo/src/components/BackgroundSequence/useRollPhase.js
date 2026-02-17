@@ -94,7 +94,10 @@ export default function useRollPhase({
             setPhase("growth_resolve");
           }
         } else {
-          const type = entry === "Any Skill" ? "growth_any_skill" : "growth_stat";
+          const type =
+            entry === "Any Skill" ? "growth_any_skill" :
+            entry === "+1 Physical, +1 Mental" ? "growth_compound_stat" :
+            "growth_stat";
           setResolveInfo({ type, entry });
           setPhase("growth_resolve");
         }
@@ -188,11 +191,31 @@ export default function useRollPhase({
     setSelectedResolveChoice(null);
   };
 
-  const resolveGrowthSplit = (s1, s2) => {
+  const resolveGrowthAllocate = (distribution) => {
+    const entries = Object.entries(distribution);
     const next = deepClone(wcRef.current);
-    resolveGrowthRoll(next, growthEntry, { split: { stat1: s1, stat2: s2 } });
-    setWorkingChar(next);
-    setRollOutcomes(prev => ({ ...prev, growth: `Applied +1 ${s1}, +1 ${s2}` }));
+    const summary = entries.map(([s, v]) => `+${v} ${s}`).join(", ");
+
+    if (growthEntry === "+1 Physical, +1 Mental") {
+      // Compound: distribution has one physical and one mental stat
+      const physicals = ["strength", "dexterity", "constitution"];
+      const physical = entries.find(([s]) => physicals.includes(s))?.[0];
+      const mental = entries.find(([s]) => !physicals.includes(s))?.[0];
+      resolveGrowthRoll(next, growthEntry, { physical, mental });
+      setWorkingChar(next);
+      setRollOutcomes(prev => ({ ...prev, growth: `Applied ${summary}` }));
+    } else if (entries.length === 1) {
+      const [stat, bonus] = entries[0];
+      resolveGrowthRoll(next, growthEntry, { stat });
+      setWorkingChar(next);
+      setRollOutcomes(prev => ({ ...prev, growth: `Applied +${bonus} ${stat}` }));
+    } else {
+      const [stat1] = entries[0];
+      const [stat2] = entries[1];
+      resolveGrowthRoll(next, growthEntry, { split: { stat1, stat2 } });
+      setWorkingChar(next);
+      setRollOutcomes(prev => ({ ...prev, growth: `Applied ${summary}` }));
+    }
     setTimeout(() => setPhase("growth_done"), 400);
   };
 
@@ -206,6 +229,6 @@ export default function useRollPhase({
     setSelectedResolveChoice,
     rollOutcomes,
     handleConfirmResolve,
-    resolveGrowthSplit,
+    resolveGrowthAllocate,
   };
 }

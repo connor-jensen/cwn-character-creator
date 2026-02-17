@@ -14,7 +14,7 @@ import DiceRollSequence from "../DiceRollSequence";
 import BackgroundSequence from "../BackgroundSequence";
 import SelectionSequence from "../SelectionSequence";
 import ContactSequence from "../ContactSequence";
-import ChoiceGrid from "../ChoiceGrid";
+import { ALL_SKILLS } from "../../constants.js";
 import "./App.css";
 
 export default function App() {
@@ -193,15 +193,24 @@ export default function App() {
                 <div className="step-panel" key="bonus">
                   <div className="step-label">Step 06</div>
                   <h2 className="step-title">Bonus Skill</h2>
-                  <ChoiceGrid
-                    prompt={
-                      <p className="step-desc">
-                        Select one final skill to add to your operative&apos;s repertoire.
-                      </p>
-                    }
-                    items={availableSkills}
-                    onSelect={handleBonusSkill}
-                  />
+                  <p className="step-desc">
+                    Select one final skill to add to your operative&apos;s repertoire.
+                  </p>
+                  <div className="skill-pick-grid">
+                    {ALL_SKILLS.map((skill) => {
+                      const isEligible = availableSkills.includes(skill);
+                      return (
+                        <button
+                          key={skill}
+                          className={`btn-choice${!isEligible ? " btn-choice-disabled" : ""}`}
+                          disabled={!isEligible}
+                          onClick={() => handleBonusSkill(skill)}
+                        >
+                          {skill}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -211,7 +220,6 @@ export default function App() {
                   <div className="step-label">Step 07</div>
                   <h2 className="step-title">Starting Gear</h2>
                   <GearSelection
-                    char={char}
                     selectedWeapon={selectedWeapon}
                     selectedArmor={selectedArmor}
                     selectedSpecialty={selectedSpecialty}

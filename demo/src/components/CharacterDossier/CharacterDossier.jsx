@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   edges as allEdges,
   backgrounds as allBackgrounds,
@@ -25,6 +25,16 @@ export default function CharacterDossier({ char }) {
   const techItems = char.inventory.filter((i) => i.specialty && i.category === "tech");
 
   const fid = useMemo(() => fileHash(char.name), [char.name]);
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([JSON.stringify(char, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(char.name || "character").replace(/\s+/g, "_").toLowerCase()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [char]);
 
   return (
     <div className="dos">
@@ -360,6 +370,12 @@ export default function CharacterDossier({ char }) {
             </section>
           )}
         </div>
+      </div>
+
+      <div className="dos-download-row">
+        <button className="btn-action" onClick={handleDownload}>
+          <span className="btn-prompt">&gt;_</span> Download JSON
+        </button>
       </div>
     </div>
   );

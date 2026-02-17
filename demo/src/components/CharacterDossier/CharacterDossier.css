@@ -808,3 +808,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Download */
+
+.dos-download-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-dim);
+}

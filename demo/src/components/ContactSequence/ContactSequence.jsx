@@ -111,9 +111,11 @@ export default function ContactSequence({ contacts, onComplete }) {
               transition={{ duration: 0.25, delay: DETAIL_ROWS.length * 0.08 }}
             >
               <span className="contact-detail-label">What They Can Do</span>
-              <span className="contact-detail-value">
-                {contact.whatTheyCanDoForYou.join("; ")}
-              </span>
+              <ul className="contact-detail-abilities">
+                {contact.whatTheyCanDoForYou.map((ability, i) => (
+                  <li key={i}>{ability}</li>
+                ))}
+              </ul>
             </motion.div>
           </div>
         </motion.div>
