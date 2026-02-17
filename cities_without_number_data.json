@@ -123,7 +123,7 @@
     },
     {
       "name": "Bureaucrat",
-      "description": "City government functionary.",
+      "description": "City government functionary or middle-manager.",
       "free_skill": "Talk-0",
       "growth": ["+1 Physical, +1 Mental", "+2 Mental", "+2 Mental", "+2 Mental", "Talk", "Any Skill"],
       "learning": ["Connect", "Know", "Talk", "Program", "Exert", "Drive", "Notice", "Any Skill"]
@@ -199,15 +199,8 @@
       "learning": ["Know", "Any Combat", "Notice", "Sneak", "Talk", "Connect", "Heal", "Any Skill"]
     },
     {
-      "name": "Manager",
-      "description": "Middle-manager or project lead.",
-      "free_skill": "Talk-0",
-      "growth": ["+1 Physical, +1 Mental", "+2 Mental", "+2 Mental", "+2 Mental", "Talk", "Any Skill"],
-      "learning": ["Know", "Talk", "Drive", "Connect", "Notice", "Exert", "Program", "Any Skill"]
-    },
-    {
       "name": "Outlander",
-      "description": "Survivor from the wastes beyond the city.",
+      "description": "An outsider who learned to survive before learning the streets.",
       "free_skill": "Exert-0",
       "growth": ["+1 Physical, +1 Mental", "+2 Physical", "+2 Physical", "+2 Mental", "Exert", "Any Skill"],
       "learning": ["Exert", "Drive", "Fix", "Know", "Sneak", "Connect", "Any Combat", "Any Skill"]
@@ -218,6 +211,13 @@
       "free_skill": "Talk-0",
       "growth": ["+1 Physical, +1 Mental", "+1 Physical, +1 Mental", "+2 Mental", "+2 Physical", "Talk", "Any Skill"],
       "learning": ["Connect", "Know", "Connect", "Talk", "Exert", "Sneak", "Any Combat", "Any Skill"]
+    },
+    {
+      "name": "Researcher",
+      "description": "Academic, lab scientist, or corporate R&D analyst.",
+      "free_skill": "Know-0",
+      "growth": ["+1 Physical, +1 Mental", "+2 Mental", "+2 Mental", "+2 Mental", "Know", "Any Skill"],
+      "learning": ["Know", "Program", "Heal", "Notice", "Talk", "Connect", "Fix", "Any Skill"]
     },
     {
       "name": "Soldier",
@@ -239,13 +239,6 @@
       "free_skill": "Talk-0",
       "growth": ["+1 Physical, +1 Mental", "+2 Mental", "+2 Physical", "+2 Physical", "Talk", "Any Skill"],
       "learning": ["Know", "Notice", "Connect", "Fix", "Talk", "Drive", "Any Combat", "Any Skill"]
-    },
-    {
-      "name": "Streetwalker",
-      "description": "Professional distraction or companion.",
-      "free_skill": "Talk-0",
-      "growth": ["+1 Physical, +1 Mental", "+1 Physical, +1 Mental", "+2 Physical", "+2 Mental", "Talk", "Any Skill"],
-      "learning": ["Talk", "Exert", "Connect", "Know", "Sneak", "Notice", "Heal", "Any Skill"]
     },
     {
       "name": "Technician",
