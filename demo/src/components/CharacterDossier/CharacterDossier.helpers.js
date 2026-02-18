@@ -142,7 +142,7 @@ export function computeDefenses(char) {
 export function computeSystemStrain(char) {
   let used = char.cyberwarePackage?.totalSystemStrain || 0;
   for (const item of char.inventory) {
-    if (item.specialty && item.category === "cyberware" && item.stats.strain) {
+    if ((item.specialty || item.hackerGear) && item.category === "cyberware" && item.stats?.strain) {
       used += item.stats.strain;
     }
   }

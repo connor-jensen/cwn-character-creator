@@ -9,6 +9,7 @@ import {
   calculateDerivedStats,
   equipStartingGear,
   equipSpecialtyItem,
+  getBonusProgramPending,
   generateContact,
   addGeneratedContact,
   getContactAllotment,
@@ -148,8 +149,15 @@ export default function useCharacterCreation() {
     const next = deepClone(char);
     equipStartingGear(next, selectedWeapon, selectedArmor);
     equipSpecialtyItem(next, selectedSpecialty);
+    // Clear any previously-picked bonus programs (for re-doing gear)
+    next.programs = next.programs.filter((p) => !p.bonusPick);
+    const bonusPending = getBonusProgramPending(next);
     setChar(next);
-    advanceTo(step + 1, next);
+    if (bonusPending.length > 0) {
+      setPendingQueue(bonusPending);
+    } else {
+      advanceTo(step + 1, next);
+    }
   };
 
   const handleContactsComplete = (names) => {

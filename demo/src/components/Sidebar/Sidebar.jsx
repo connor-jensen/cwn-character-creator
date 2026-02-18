@@ -149,6 +149,30 @@ export default function Sidebar({ char, isFullWidth }) {
             </div>
           </div>
 
+          {char.programs?.length > 0 && (
+            <div className="sheet-section">
+              <div className="sheet-section-title">
+                <span>Hacking</span>
+              </div>
+              <div className="sheet-list">
+                {char.inventory
+                  .filter((i) => i.hackerGear)
+                  .map((item) => (
+                    <div key={item.name} className="sheet-list-item">
+                      <strong>{item.name}</strong>
+                      <span className="sheet-item-desc">{item.category}</span>
+                    </div>
+                  ))}
+                <div className="sheet-list-item">
+                  <strong>{char.programs.length} Programs Loaded</strong>
+                  <span className="sheet-item-desc">
+                    {char.programs.filter((p) => p.elementType === "verb").length} verbs, {char.programs.filter((p) => p.elementType === "subject").length} subjects
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {char.inventory.length > 0 && (
             <div className="sheet-section">
               <div className="sheet-section-title">

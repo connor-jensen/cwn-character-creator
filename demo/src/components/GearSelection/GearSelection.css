@@ -115,6 +115,23 @@
   color: var(--magenta) !important;
 }
 
+/* Gear Hint */
+
+.gear-hint {
+  font-size: 0.8rem;
+  color: var(--cyan);
+  background: rgba(0, 210, 255, 0.04);
+  border: 1px solid var(--cyan-20);
+  border-radius: 3px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.gear-hint strong {
+  color: var(--text-bright);
+}
+
 /* Specialty Items */
 
 .gear-specialty-section {

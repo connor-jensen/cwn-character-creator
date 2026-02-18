@@ -1,6 +1,6 @@
 import data from "./cities_without_number_data.json" with { type: "json" };
 
-export const { edges, backgrounds, foci, contactTables, cyberwarePackages } = data;
+export const { edges, backgrounds, foci, contactTables, cyberwarePackages, hacking } = data;
 
 // --- Dice Utilities ---
 
@@ -53,6 +53,8 @@ export function createCharacter() {
     startingContactBonus: 0,
     inventory: [],
     cyberwarePackage: null,
+    programs: [],
+    hackingStats: null,
   };
 }
 
@@ -196,6 +198,28 @@ export function applyEdge(char, edgeName) {
           reason: "Program already at cap",
         });
       }
+      equipHackerGear(char);
+      // Starter package: 6 fixed programs
+      const starterPack = [
+        { name: "Unlock", elementType: "verb" },
+        { name: "Analyze", elementType: "verb" },
+        { name: "Stun", elementType: "verb" },
+        { name: "Glitch", elementType: "verb" },
+        { name: "Avatar", elementType: "subject" },
+        { name: "Machine", elementType: "subject" },
+      ];
+      char.programs.push(...starterPack);
+      // Pick 2 more from curated list
+      pending.push({
+        type: "pickProgramElements",
+        budget: 2,
+        reason: "Choose Program Elements",
+        options: [
+          "Blind", "Ghost", "Deactivate", "Sense", "Frisk", "Erase",
+          "Lock", "Terminate", "Sabotage",
+          "Camera", "Cyber", "Datafile", "Door", "Drone", "Turret", "Sensor",
+        ],
+      });
       break;
     }
     case "Killing Blow":
@@ -293,6 +317,38 @@ export function resolvePending(char, pendingItem, choice) {
           budget: SKILLPLUG_BUDGET,
           reason: "Choose Skillplugs",
         });
+      }
+      break;
+    }
+    case "pickProgramElements": {
+      if (!Array.isArray(choice)) {
+        throw new Error("Program element selection must be an array of element names.");
+      }
+      if (choice.length !== pendingItem.budget) {
+        throw new Error(
+          `Must select exactly ${pendingItem.budget} program elements, got ${choice.length}.`
+        );
+      }
+      const seen = new Set();
+      const allVerbs = hacking.verbs.map((v) => v.name);
+      const allSubjects = hacking.subjects.map((s) => s.name);
+      const allowed = pendingItem.options || null;
+      for (const name of choice) {
+        if (seen.has(name)) {
+          throw new Error(`Duplicate program element: "${name}".`);
+        }
+        seen.add(name);
+        if (allowed && !allowed.includes(name)) {
+          throw new Error(`"${name}" is not an available option.`);
+        }
+        const isBonusPick = !!pendingItem.bonusPick;
+        if (allVerbs.includes(name)) {
+          char.programs.push({ name, elementType: "verb", ...(isBonusPick && { bonusPick: true }) });
+        } else if (allSubjects.includes(name)) {
+          char.programs.push({ name, elementType: "subject", ...(isBonusPick && { bonusPick: true }) });
+        } else {
+          throw new Error(`Unknown program element: "${name}".`);
+        }
       }
       break;
     }
@@ -611,6 +667,25 @@ export function calculateDerivedStats(char) {
   // HOUSE RULE: CHA mod → starting contact adjustment
   char.startingContactBonus = chaMod;
 
+  // Hacking stats (Hackers, or anyone with Program >= 1 + cyberdeck)
+  const programLevel = char.skills.Program !== undefined ? char.skills.Program : 0;
+  const deck = char.inventory.find((i) => i.category === "hacking" && i.stats?.memory);
+  const canHack = char.edges.includes("Hacker") || (programLevel >= 1 && deck);
+
+  if (canHack) {
+    const hasCranialJack = char.inventory.some((i) => i.name === "Cranial Jack");
+    const bonusAccess = deck?.stats?.bonusAccess || 0;
+
+    char.hackingStats = {
+      accessPool: intMod + programLevel + bonusAccess,
+      baseHackingBonus: intMod + programLevel,
+      interfacePenalty: hasCranialJack ? 0 : -1,
+      deckMemory: deck?.stats?.memory || 0,
+      deckShielding: deck?.stats?.shielding || 0,
+      deckCPU: deck?.stats?.cpu || 0,
+    };
+  }
+
   return char;
 }
 
@@ -736,19 +811,72 @@ export function equipSpecialtyItem(char, itemName) {
   return char;
 }
 
+export function equipHackerGear(char) {
+  const jack = SPECIALTY_ITEMS.find((i) => i.name === "Cranial Jack");
+  char.inventory.push(
+    { ...jack, specialty: false, hackerGear: true },
+    {
+      name: "Scrap Cyberdeck", category: "hacking", hackerGear: true, specialty: false,
+      description: "A basic hacking rig. Bare-bones but functional.",
+      stats: { memory: 8, shielding: 5, cpu: 2, bonusAccess: 1, enc: 1 },
+    }
+  );
+  return char;
+}
+
 export function equipStartingGear(char, weaponName, armorName) {
   const weapon = STARTING_WEAPONS.find((w) => w.name === weaponName);
   if (!weapon) throw new Error(`Unknown starting weapon: ${weaponName}`);
   const armor = STARTING_ARMOR.find((a) => a.name === armorName);
   if (!armor) throw new Error(`Unknown starting armor: ${armorName}`);
 
-  // Idempotent: clear any existing weapon/armor, but preserve specialty items
+  // Idempotent: clear any existing weapon/armor, but preserve specialty and hacker gear
   char.inventory = char.inventory.filter(
-    (item) => item.specialty || (item.category !== "weapon" && item.category !== "armor")
+    (item) => item.specialty || item.hackerGear || (item.category !== "weapon" && item.category !== "armor")
   );
 
   char.inventory.push({ ...weapon }, { ...STARTING_KNIFE }, { ...armor });
   return char;
+}
+
+// --- Bonus Program Eligibility ---
+
+const STARTER_ELEMENTS = ["Unlock", "Analyze", "Stun", "Glitch", "Avatar", "Machine"];
+
+const BONUS_PICK_POOL = [
+  "Blind", "Ghost", "Deactivate", "Sense", "Frisk", "Erase",
+  "Lock", "Terminate", "Sabotage",
+  "Camera", "Cyber", "Datafile", "Door", "Drone", "Turret", "Sensor",
+];
+
+export function getBonusProgramPending(char) {
+  // Guard: need Program >= 1 and a cyberdeck in inventory
+  if (!(char.skills.Program >= 1)) return [];
+  const deck = char.inventory.find((i) => i.category === "hacking" && i.stats?.memory);
+  if (!deck) return [];
+
+  const hasExpertProgrammer = char.foci.some((f) => f.name === "Expert Programmer");
+  const budget = 2 + (hasExpertProgrammer ? 3 : 0);
+
+  const ownedNames = new Set(char.programs.map((p) => p.name));
+  const isHacker = char.edges.includes("Hacker");
+
+  // Non-Hackers can also pick from starter elements (Hackers already have them)
+  const pool = isHacker ? BONUS_PICK_POOL : [...STARTER_ELEMENTS, ...BONUS_PICK_POOL];
+  const options = pool.filter((n) => !ownedNames.has(n));
+
+  const suggestedStarters = isHacker
+    ? []
+    : STARTER_ELEMENTS.filter((n) => !ownedNames.has(n));
+
+  return [{
+    type: "pickProgramElements",
+    budget,
+    bonusPick: true,
+    reason: "Choose Bonus Program Elements",
+    options,
+    suggestedStarters,
+  }];
 }
 
 // --- Draft / Offer System ---

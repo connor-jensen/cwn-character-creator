@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   edges as allEdges,
   backgrounds as allBackgrounds,
   foci as allFoci,
+  hacking,
 } from "../../../../cwn-engine.js";
 import { ALL_SKILLS, ATTR_NAMES } from "../../constants.js";
 import { normalizeWeapon, fileHash, attrPercent, computeDefenses, computeSystemStrain } from "./CharacterDossier.helpers.js";
@@ -12,6 +13,7 @@ import GearBlock from "./GearBlock.jsx";
 import "./CharacterDossier.css";
 
 export default function CharacterDossier({ char }) {
+  const [loadedPrograms, setLoadedPrograms] = useState(() => new Set());
   const bgObj = char.background && allBackgrounds.find((b) => b.name === char.background);
   const edgeObjs = char.edges.map((name) => allEdges.find((e) => e.name === name)).filter(Boolean);
 
@@ -19,7 +21,8 @@ export default function CharacterDossier({ char }) {
   const systemStrain = computeSystemStrain(char);
 
   const weapons = char.inventory.filter((i) => i.category === "weapon");
-  const hackingItems = char.inventory.filter((i) => i.specialty && i.category === "hacking");
+  const hackingItems = char.inventory.filter((i) => (i.specialty || i.hackerGear) && i.category === "hacking");
+  const hackerCyberware = char.inventory.filter((i) => i.hackerGear && i.category === "cyberware");
   const vehicleDroneItems = char.inventory.filter((i) => i.specialty && (i.category === "vehicle" || i.category === "drone"));
   const cyberwareSpecialty = char.inventory.filter((i) => i.specialty && i.category === "cyberware");
   const techItems = char.inventory.filter((i) => i.specialty && i.category === "tech");
@@ -313,22 +316,186 @@ export default function CharacterDossier({ char }) {
             </section>
           )}
 
-          {hackingItems.length > 0 && (
+          {(hackingItems.length > 0 || char.programs?.length > 0) && (() => {
+                const verbLookup = Object.fromEntries(hacking.verbs.map((v) => [v.name, v]));
+                const subjectLookup = Object.fromEntries(hacking.subjects.map((s) => [s.name, s]));
+                const verbs = (char.programs || []).filter((p) => p.elementType === "verb");
+                const subjects = (char.programs || []).filter((p) => p.elementType === "subject");
+                const deckMemory = char.hackingStats?.deckMemory || 0;
+                const loadedCount = loadedPrograms.size;
+                const memoryFull = loadedCount >= deckMemory;
+
+                const toggleLoaded = (name) => {
+                  setLoadedPrograms((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(name)) {
+                      next.delete(name);
+                    } else if (next.size < deckMemory) {
+                      next.add(name);
+                    }
+                    return next;
+                  });
+                };
+
+                const loadedVerbs = verbs.filter((p) => loadedPrograms.has(p.name));
+                const loadedSubjects = subjects.filter((p) => loadedPrograms.has(p.name));
+
+                return (
             <section className="dos-section">
-              <SectionHeader num="11" label="Cyberdeck" />
+              <SectionHeader num="11" label="Hacking" />
+
+              {char.hackingStats && (
+                <div className="dos-hacking-stats">
+                  <div className="dos-defense-stat">
+                    <span className="dos-defense-val">{char.hackingStats.accessPool}</span>
+                    <span className="dos-defense-label">Access Pool</span>
+                  </div>
+                  <div className="dos-defense-stat">
+                    <span className="dos-defense-val">+{char.hackingStats.baseHackingBonus}</span>
+                    <span className="dos-defense-label">Hack Bonus</span>
+                  </div>
+                  <div className="dos-defense-stat">
+                    <span className="dos-defense-val">
+                      {char.hackingStats.interfacePenalty === 0 ? "Jack" : "VR -1"}
+                    </span>
+                    <span className="dos-defense-label">Interface</span>
+                  </div>
+                </div>
+              )}
+
               {hackingItems.map((item) => (
                 <GearBlock
                   key={item.name}
                   item={item}
                   pills={[
-                    item.stats.memory && ["MEM", item.stats.memory],
+                    item.stats.memory && ["MEM", `${loadedCount}/${item.stats.memory}`],
                     item.stats.shielding && ["Shield", item.stats.shielding],
                     item.stats.cpu && ["CPU", item.stats.cpu],
                     item.stats.bonusAccess && ["Access", `+${item.stats.bonusAccess}`],
                   ].filter(Boolean)}
                 />
               ))}
+
+              {(loadedVerbs.length > 0 || loadedSubjects.length > 0) && (
+                <div className="dos-loaded-programs">
+                  <div className="dos-programs-label">Loaded into Deck</div>
+                  <div className="dos-loaded-grid">
+                    {loadedVerbs.map((p) => (
+                      <span key={p.name} className="dos-loaded-pill dos-loaded-verb">{p.name}</span>
+                    ))}
+                    {loadedSubjects.map((p) => (
+                      <span key={p.name} className="dos-loaded-pill dos-loaded-subject">{p.name}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hackerCyberware.map((item) => (
+                <GearBlock
+                  key={item.name}
+                  item={item}
+                  pills={[
+                    item.stats.strain !== undefined && ["Strain", item.stats.strain],
+                    item.stats.concealment && ["Conceal", item.stats.concealment],
+                    item.stats.effect && ["", item.stats.effect],
+                  ].filter(Boolean)}
+                />
+              ))}
+
+              {char.programs?.length > 0 && (
+                <div className="dos-programs">
+                  <div className="dos-programs-label">Program Library</div>
+                  <div className="dos-memory-bar">
+                    <span className={`dos-memory-count${memoryFull ? " dos-memory-full" : ""}`}>
+                      {loadedCount}/{deckMemory} memory
+                    </span>
+                  </div>
+
+                  {verbs.length > 0 && (
+                    <>
+                      <div className="dos-programs-sublabel">Verbs</div>
+                      <table className="dos-program-table dos-program-table-verb">
+                        <thead>
+                          <tr>
+                            <th className="dos-program-th-load"></th>
+                            <th>Verb</th>
+                            <th>Targets</th>
+                            <th>Access</th>
+                            <th>Mod</th>
+                            <th>Use</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {verbs.map((p) => {
+                            const data = verbLookup[p.name];
+                            const isLoaded = loadedPrograms.has(p.name);
+                            return (
+                              <tr key={p.name} className={isLoaded ? "dos-program-row-loaded" : ""}>
+                                <td className="dos-program-td-load">
+                                  <input
+                                    type="checkbox"
+                                    className="dos-program-check"
+                                    checked={isLoaded}
+                                    disabled={!isLoaded && memoryFull}
+                                    onChange={() => toggleLoaded(p.name)}
+                                  />
+                                </td>
+                                <td className="dos-program-name">{p.name}</td>
+                                <td>{data?.targetsAllowed?.join("/") || "\u2014"}</td>
+                                <td>{data?.accessCost ?? "\u2014"}{data?.selfTerminating ? "*" : ""}</td>
+                                <td>{data?.skillCheckModifier != null ? (data.skillCheckModifier >= 0 ? `+${data.skillCheckModifier}` : data.skillCheckModifier) : "N/A"}</td>
+                                <td className="dos-program-use">{data?.use || "\u2014"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      <div className="dos-program-footnote">* Self-terminating</div>
+                    </>
+                  )}
+
+                  {subjects.length > 0 && (
+                    <>
+                      <div className="dos-programs-sublabel">Subjects</div>
+                      <table className="dos-program-table dos-program-table-subject">
+                        <thead>
+                          <tr>
+                            <th className="dos-program-th-load"></th>
+                            <th>Subject</th>
+                            <th>Type</th>
+                            <th>Use</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {subjects.map((p) => {
+                            const data = subjectLookup[p.name];
+                            const isLoaded = loadedPrograms.has(p.name);
+                            return (
+                              <tr key={p.name} className={isLoaded ? "dos-program-row-loaded" : ""}>
+                                <td className="dos-program-td-load">
+                                  <input
+                                    type="checkbox"
+                                    className="dos-program-check"
+                                    checked={isLoaded}
+                                    disabled={!isLoaded && memoryFull}
+                                    onChange={() => toggleLoaded(p.name)}
+                                  />
+                                </td>
+                                <td className="dos-program-name">{p.name}</td>
+                                <td>{data?.type || "\u2014"}</td>
+                                <td className="dos-program-use">{data?.use || "\u2014"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                </div>
+              )}
             </section>
+                );
+          })()}
           )}
 
           {vehicleDroneItems.length > 0 && (

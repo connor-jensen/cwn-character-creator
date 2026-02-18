@@ -8,6 +8,7 @@ import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 import ChoiceGrid from "../ChoiceGrid";
 import ConfirmButton from "../ConfirmButton";
 import SkillplugPicker from "./SkillplugPicker.jsx";
+import ProgramElementPicker from "./ProgramElementPicker.jsx";
 import "./PendingResolver.css";
 
 function CyberwarePackagePicker({ onResolve }) {
@@ -117,6 +118,14 @@ export default function PendingResolver({ item, char, onResolve }) {
     return (
       <div>
         <SkillplugPicker budget={item.budget} onResolve={onResolve} />
+      </div>
+    );
+  }
+
+  if (item.type === "pickProgramElements") {
+    return (
+      <div>
+        <ProgramElementPicker budget={item.budget} options={item.options} char={char} suggestedStarters={item.suggestedStarters || []} onResolve={onResolve} />
       </div>
     );
   }

@@ -809,6 +809,191 @@
   }
 }
 
+/* ---- Hacking Section ---- */
+.dos-hacking-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.dos-programs {
+  margin-top: 0.75rem;
+}
+
+.dos-programs-label {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.dos-programs-label:first-child {
+  margin-top: 0;
+}
+
+.dos-program-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.dos-program-table th {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dos-program-table td {
+  padding: 0.3rem 0.5rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.dos-program-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dos-program-table-verb .dos-program-name {
+  color: var(--magenta);
+  font-weight: 600;
+}
+
+.dos-program-table-subject .dos-program-name {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.dos-program-use {
+  font-family: var(--font-body, inherit);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.dos-program-footnote {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 0.25rem;
+}
+
+.dos-programs-sublabel {
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.dos-program-th-load,
+.dos-program-td-load {
+  width: 1.5rem;
+  text-align: center;
+  padding-left: 0.25rem;
+  padding-right: 0;
+}
+
+.dos-program-check {
+  appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-deep);
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+}
+
+.dos-program-check:checked {
+  border-color: var(--cyan);
+  background: rgba(0, 210, 255, 0.15);
+}
+
+.dos-program-check:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--cyan);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.dos-program-check:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dos-program-row-loaded {
+  background: rgba(0, 210, 255, 0.04) !important;
+}
+
+.dos-memory-bar {
+  margin-bottom: 0.5rem;
+}
+
+.dos-memory-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--cyan);
+}
+
+.dos-memory-full {
+  color: var(--amber);
+}
+
+/* Loaded Programs (under deck) */
+.dos-loaded-programs {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dos-loaded-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.dos-loaded-pill {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid var(--border-dim);
+}
+
+.dos-loaded-verb {
+  color: var(--magenta);
+  background: rgba(255, 0, 128, 0.08);
+  border-color: rgba(255, 0, 128, 0.2);
+}
+
+.dos-loaded-subject {
+  color: var(--green);
+  background: rgba(57, 255, 20, 0.08);
+  border-color: rgba(57, 255, 20, 0.2);
+}
+
 /* Download */
 
 .dos-download-row {

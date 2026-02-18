@@ -24,6 +24,7 @@ function renderSpecialtyStats(item) {
 }
 
 export default function GearSelection({
+  char,
   selectedWeapon,
   selectedArmor,
   selectedSpecialty,
@@ -32,6 +33,13 @@ export default function GearSelection({
   onSpecialtySelect,
   onConfirm,
 }) {
+  const hackerGearNames = new Set(
+    (char?.inventory || []).filter((i) => i.hackerGear).map((i) => i.name)
+  );
+  const hasCyberdeck = (char?.inventory || []).some((i) => i.category === "hacking" && i.stats?.memory);
+  const availableSpecialty = SPECIALTY_ITEMS.filter(
+    (i) => !hackerGearNames.has(i.name) && !(hasCyberdeck && i.category === "hacking")
+  );
 
   return (
     <>
@@ -131,8 +139,24 @@ export default function GearSelection({
 
       <div className="gear-specialty-section">
         <div className="gear-section-label">Choose Specialty Item</div>
+
+        {char?.foci?.some((f) => f.name === "Expert Programmer") &&
+          !char?.inventory?.some((i) => i.category === "hacking") && (
+          <p className="gear-hint">
+            Your Expert Programmer focus pairs well with a cyberdeck. Pick <strong>Scrap Cyberdeck + VR Crown</strong> to unlock hacking and bonus program elements.
+          </p>
+        )}
+        {!char?.foci?.some((f) => f.name === "Expert Programmer") &&
+          (char?.skills?.Program >= 1) &&
+          !char?.edges?.includes("Hacker") &&
+          !char?.inventory?.some((i) => i.category === "hacking") && (
+          <p className="gear-hint">
+            You have the Program skill — picking a cyberdeck will let you choose bonus program elements.
+          </p>
+        )}
+
         <div className="gear-specialty-grid">
-          {SPECIALTY_ITEMS.map((item) => (
+          {availableSpecialty.map((item) => (
             <button
               key={item.name}
               className={`gear-card${selectedSpecialty === item.name ? " gear-card-selected" : ""}`}

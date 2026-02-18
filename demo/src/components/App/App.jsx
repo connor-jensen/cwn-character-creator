@@ -220,6 +220,7 @@ export default function App() {
                   <div className="step-label">Step 07</div>
                   <h2 className="step-title">Starting Gear</h2>
                   <GearSelection
+                    char={char}
                     selectedWeapon={selectedWeapon}
                     selectedArmor={selectedArmor}
                     selectedSpecialty={selectedSpecialty}

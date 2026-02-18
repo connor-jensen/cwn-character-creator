@@ -41,6 +41,9 @@ import {
   cyberwarePackages,
   MENTAL_SKILLS,
   PHYSICAL_SKILLS,
+  hacking,
+  equipHackerGear,
+  getBonusProgramPending,
 } from "./cwn-engine.js";
 
 // --- Data Loading ---
@@ -338,11 +341,28 @@ describe("applyEdge", () => {
     assert.equal(pending[0].type, "pickSkill");
   });
 
-  it("Hacker auto-grants Program", () => {
+  it("Hacker auto-grants Program, starter programs, and pick-2 pending", () => {
     const c = createCharacter();
     const { pending } = applyEdge(c, "Hacker");
     assert.equal(c.skills.Program, 0);
-    assert.equal(pending.length, 0);
+    // 6 starter programs auto-added
+    assert.equal(c.programs.length, 6);
+    const starterNames = c.programs.map((p) => p.name);
+    assert.ok(starterNames.includes("Unlock"));
+    assert.ok(starterNames.includes("Analyze"));
+    assert.ok(starterNames.includes("Stun"));
+    assert.ok(starterNames.includes("Glitch"));
+    assert.ok(starterNames.includes("Avatar"));
+    assert.ok(starterNames.includes("Machine"));
+    // Pick-2 pending with options
+    const prog = pending.find((p) => p.type === "pickProgramElements");
+    assert.ok(prog);
+    assert.equal(prog.budget, 2);
+    assert.ok(Array.isArray(prog.options));
+    assert.equal(prog.options.length, 16);
+    // Hacker gear auto-equipped
+    assert.ok(c.inventory.some((i) => i.name === "Cranial Jack" && i.hackerGear));
+    assert.ok(c.inventory.some((i) => i.name === "Scrap Cyberdeck" && i.hackerGear));
   });
 
   it("Killing Blow returns combat pickSkill", () => {
@@ -1374,5 +1394,330 @@ describe("pickSkillplugs via resolvePending", () => {
       () => resolvePending(c, item, ["Fly"]),
       /not a valid skillplug/
     );
+  });
+});
+
+// --- Hacking Data ---
+
+describe("Hacking data", () => {
+  it("loads 12 subjects", () => {
+    assert.ok(Array.isArray(hacking.subjects));
+    assert.equal(hacking.subjects.length, 12);
+  });
+
+  it("loads 24 verbs", () => {
+    assert.ok(Array.isArray(hacking.verbs));
+    assert.equal(hacking.verbs.length, 24);
+  });
+
+  it("each subject has required fields", () => {
+    for (const s of hacking.subjects) {
+      assert.ok(s.name, "missing name");
+      assert.ok(s.cost !== undefined, `${s.name} missing cost`);
+      assert.ok(s.type, `${s.name} missing type`);
+      assert.ok(s.description, `${s.name} missing description`);
+    }
+  });
+
+  it("each verb has required fields", () => {
+    for (const v of hacking.verbs) {
+      assert.ok(v.name, "missing name");
+      assert.ok(v.cost !== undefined, `${v.name} missing cost`);
+      assert.ok(Array.isArray(v.targetsAllowed), `${v.name} missing targetsAllowed`);
+      assert.ok(v.accessCost !== undefined, `${v.name} missing accessCost`);
+      assert.ok(typeof v.selfTerminating === "boolean", `${v.name} missing selfTerminating`);
+      assert.ok(v.description, `${v.name} missing description`);
+    }
+  });
+});
+
+// --- Hacker Edge Auto-Equip ---
+
+describe("equipHackerGear", () => {
+  it("adds Cranial Jack and Scrap Cyberdeck to inventory", () => {
+    const c = createCharacter();
+    equipHackerGear(c);
+    assert.ok(c.inventory.find((i) => i.name === "Cranial Jack"));
+    assert.ok(c.inventory.find((i) => i.name === "Scrap Cyberdeck"));
+  });
+
+  it("marks items as hackerGear and not specialty", () => {
+    const c = createCharacter();
+    equipHackerGear(c);
+    for (const item of c.inventory) {
+      assert.equal(item.hackerGear, true);
+      assert.equal(item.specialty, false);
+    }
+  });
+
+  it("hacker gear survives equipStartingGear", () => {
+    const c = createCharacter();
+    equipHackerGear(c);
+    equipStartingGear(c, "Light Pistol", "Padded Jacket");
+    assert.ok(c.inventory.find((i) => i.name === "Cranial Jack"), "Cranial Jack should survive");
+    assert.ok(c.inventory.find((i) => i.name === "Scrap Cyberdeck"), "Deck should survive");
+    assert.ok(c.inventory.find((i) => i.name === "Light Pistol"), "weapon should be added");
+  });
+
+  it("hacker gear survives equipSpecialtyItem", () => {
+    const c = createCharacter();
+    equipHackerGear(c);
+    equipSpecialtyItem(c, "Rifle");
+    assert.ok(c.inventory.find((i) => i.name === "Cranial Jack"), "Cranial Jack should survive");
+    assert.ok(c.inventory.find((i) => i.name === "Scrap Cyberdeck"), "Deck should survive");
+    assert.ok(c.inventory.find((i) => i.name === "Rifle"), "specialty should be added");
+  });
+});
+
+// --- pickProgramElements ---
+
+describe("pickProgramElements via resolvePending", () => {
+  const OPTIONS = [
+    "Blind", "Ghost", "Deactivate", "Sense", "Frisk", "Erase",
+    "Lock", "Terminate", "Sabotage",
+    "Camera", "Cyber", "Datafile", "Door", "Drone", "Turret", "Sensor",
+  ];
+
+  it("resolves valid 2-element selection from options", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    resolvePending(c, item, ["Blind", "Camera"]);
+    assert.equal(c.programs.length, 2);
+    assert.ok(c.programs.find((p) => p.name === "Blind" && p.elementType === "verb"));
+    assert.ok(c.programs.find((p) => p.name === "Camera" && p.elementType === "subject"));
+  });
+
+  it("rejects wrong count", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    assert.throws(
+      () => resolvePending(c, item, ["Blind"]),
+      /exactly 2/
+    );
+  });
+
+  it("rejects elements not in options list", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    assert.throws(
+      () => resolvePending(c, item, ["Activate", "Camera"]),
+      /not an available option/
+    );
+  });
+
+  it("rejects invalid names", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    assert.throws(
+      () => resolvePending(c, item, ["Blind", "FakeElement"]),
+      /not an available option/
+    );
+  });
+
+  it("rejects duplicates", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    assert.throws(
+      () => resolvePending(c, item, ["Blind", "Blind"]),
+      /Duplicate/
+    );
+  });
+
+  it("rejects non-array choice", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, options: OPTIONS };
+    assert.throws(
+      () => resolvePending(c, item, "Blind"),
+      /must be an array/
+    );
+  });
+
+  it("works without options (unconstrained)", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2 };
+    resolvePending(c, item, ["Kill", "Avatar"]);
+    assert.equal(c.programs.length, 2);
+  });
+});
+
+// --- Hacking Derived Stats ---
+
+describe("calculateDerivedStats hacking", () => {
+  function makeHacker() {
+    const c = createCharacter();
+    c.edges.push("Hacker");
+    c.skills.Program = 1;
+    c.attributes.intelligence.score = 14; // mod +1
+    updateModifiers(c);
+    equipHackerGear(c);
+    return c;
+  }
+
+  it("computes hacking stats for Hackers", () => {
+    const c = makeHacker();
+    calculateDerivedStats(c);
+    assert.ok(c.hackingStats);
+    // accessPool = INT mod(1) + Program(1) + bonusAccess(1) = 3
+    assert.equal(c.hackingStats.accessPool, 3);
+    // baseHackingBonus = INT mod(1) + Program(1) = 2
+    assert.equal(c.hackingStats.baseHackingBonus, 2);
+    // Has Cranial Jack, so no penalty
+    assert.equal(c.hackingStats.interfacePenalty, 0);
+    assert.equal(c.hackingStats.deckMemory, 8);
+    assert.equal(c.hackingStats.deckShielding, 5);
+    assert.equal(c.hackingStats.deckCPU, 2);
+  });
+
+  it("skips hacking stats for non-Hackers", () => {
+    const c = createCharacter();
+    calculateDerivedStats(c);
+    assert.equal(c.hackingStats, null);
+  });
+
+  it("shows -1 interface penalty without Cranial Jack", () => {
+    const c = makeHacker();
+    // Remove Cranial Jack
+    c.inventory = c.inventory.filter((i) => i.name !== "Cranial Jack");
+    calculateDerivedStats(c);
+    assert.equal(c.hackingStats.interfacePenalty, -1);
+  });
+
+  it("computes hacking stats for non-Hacker with Program-1 + cyberdeck", () => {
+    const c = createCharacter();
+    c.skills.Program = 1;
+    c.attributes.intelligence.score = 14; // mod +1
+    updateModifiers(c);
+    // Add a cyberdeck (VR Crown specialty item)
+    equipSpecialtyItem(c, "Scrap Cyberdeck + VR Crown");
+    calculateDerivedStats(c);
+    assert.ok(c.hackingStats, "should have hacking stats");
+    // accessPool = INT mod(1) + Program(1) + bonusAccess(1) = 3
+    assert.equal(c.hackingStats.accessPool, 3);
+    assert.equal(c.hackingStats.baseHackingBonus, 2);
+    // No Cranial Jack → -1 penalty
+    assert.equal(c.hackingStats.interfacePenalty, -1);
+    assert.equal(c.hackingStats.deckMemory, 8);
+  });
+
+  it("skips hacking stats for non-Hacker without cyberdeck even with Program skill", () => {
+    const c = createCharacter();
+    c.skills.Program = 1;
+    calculateDerivedStats(c);
+    assert.equal(c.hackingStats, null);
+  });
+});
+
+// --- Bonus Program Pending ---
+
+describe("getBonusProgramPending", () => {
+  function makeEligible() {
+    const c = createCharacter();
+    c.skills.Program = 1;
+    equipSpecialtyItem(c, "Scrap Cyberdeck + VR Crown");
+    return c;
+  }
+
+  it("returns empty array without Program skill", () => {
+    const c = createCharacter();
+    equipSpecialtyItem(c, "Scrap Cyberdeck + VR Crown");
+    assert.deepEqual(getBonusProgramPending(c), []);
+  });
+
+  it("returns empty array without cyberdeck", () => {
+    const c = createCharacter();
+    c.skills.Program = 1;
+    assert.deepEqual(getBonusProgramPending(c), []);
+  });
+
+  it("returns budget 2 for Program-1 + cyberdeck", () => {
+    const c = makeEligible();
+    const result = getBonusProgramPending(c);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].type, "pickProgramElements");
+    assert.equal(result[0].budget, 2);
+    assert.equal(result[0].bonusPick, true);
+  });
+
+  it("returns budget 5 with Expert Programmer focus", () => {
+    const c = makeEligible();
+    c.foci.push({ name: "Expert Programmer", level: 1 });
+    const result = getBonusProgramPending(c);
+    assert.equal(result[0].budget, 5);
+  });
+
+  it("excludes existing programs from options", () => {
+    const c = makeEligible();
+    c.programs.push({ name: "Blind", elementType: "verb" });
+    c.programs.push({ name: "Camera", elementType: "subject" });
+    const result = getBonusProgramPending(c);
+    assert.ok(!result[0].options.includes("Blind"));
+    assert.ok(!result[0].options.includes("Camera"));
+    // Others from the curated pool still present
+    assert.ok(result[0].options.includes("Ghost"));
+    assert.ok(result[0].options.includes("Drone"));
+  });
+
+  it("includes starter elements in options for non-Hacker characters", () => {
+    const c = makeEligible();
+    const result = getBonusProgramPending(c);
+    assert.ok(result[0].options.includes("Unlock"));
+    assert.ok(result[0].options.includes("Avatar"));
+    assert.ok(result[0].options.includes("Blind"));
+  });
+
+  it("includes suggestedStarters for non-Hacker characters", () => {
+    const c = makeEligible();
+    const result = getBonusProgramPending(c);
+    assert.ok(result[0].suggestedStarters.length > 0);
+    assert.ok(result[0].suggestedStarters.includes("Unlock"));
+    assert.ok(result[0].suggestedStarters.includes("Avatar"));
+  });
+
+  it("excludes starter elements from options for Hacker characters", () => {
+    const c = makeEligible();
+    c.edges.push("Hacker");
+    const result = getBonusProgramPending(c);
+    assert.ok(!result[0].options.includes("Unlock"));
+    assert.ok(!result[0].options.includes("Avatar"));
+    assert.deepEqual(result[0].suggestedStarters, []);
+  });
+
+  it("Hacker + Expert Programmer returns budget 5", () => {
+    const c = makeEligible();
+    c.edges.push("Hacker");
+    c.foci.push({ name: "Expert Programmer", level: 1 });
+    const result = getBonusProgramPending(c);
+    assert.equal(result[0].budget, 5);
+  });
+
+  it("filters suggestedStarters to exclude already-owned programs", () => {
+    const c = makeEligible();
+    c.programs.push({ name: "Unlock", elementType: "verb" });
+    c.programs.push({ name: "Analyze", elementType: "verb" });
+    const result = getBonusProgramPending(c);
+    assert.ok(!result[0].suggestedStarters.includes("Unlock"));
+    assert.ok(!result[0].suggestedStarters.includes("Analyze"));
+    assert.ok(result[0].suggestedStarters.includes("Stun"));
+  });
+});
+
+// --- Bonus Pick Tagging ---
+
+describe("resolvePending tags bonus picks", () => {
+  it("adds bonusPick flag when pendingItem.bonusPick is true", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2, bonusPick: true };
+    resolvePending(c, item, ["Unlock", "Avatar"]);
+    assert.equal(c.programs.length, 2);
+    assert.equal(c.programs[0].bonusPick, true);
+    assert.equal(c.programs[1].bonusPick, true);
+  });
+
+  it("does not add bonusPick flag when not set", () => {
+    const c = createCharacter();
+    const item = { type: "pickProgramElements", budget: 2 };
+    resolvePending(c, item, ["Unlock", "Avatar"]);
+    assert.equal(c.programs[0].bonusPick, undefined);
+    assert.equal(c.programs[1].bonusPick, undefined);
   });
 });
