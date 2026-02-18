@@ -508,20 +508,57 @@ describe("applyFocus", () => {
     assert.throws(() => applyFocus(c, "Alert"), /already selected/);
   });
 
-  it("auto-grants fixed skill (Ace Driver → Drive)", () => {
+  it("auto-grants fixed skill (Ace Driver → Drive) and pickVehicle pending", () => {
     const c = createCharacter();
     const { pending } = applyFocus(c, "Ace Driver");
     assert.equal(c.skills.Drive, 0);
-    assert.equal(pending.length, 0);
+    assert.equal(pending.length, 1);
+    assert.equal(pending[0].type, "pickVehicle");
   });
 
   it("redirects when auto-granted skill is at cap", () => {
     const c = createCharacter();
     c.skills.Drive = 1;
     const { pending } = applyFocus(c, "Ace Driver");
-    assert.equal(pending.length, 1);
+    assert.equal(pending.length, 2);
     assert.equal(pending[0].type, "pickSkill");
     assert.ok(pending[0].reason.includes("Drive"));
+    assert.equal(pending[1].type, "pickVehicle");
+  });
+
+  it("resolves pickVehicle with Motorcycle (adds with Ghost Driver fitting)", () => {
+    const c = createCharacter();
+    const { pending } = applyFocus(c, "Ace Driver");
+    const vehiclePending = pending.find((p) => p.type === "pickVehicle");
+    resolvePending(c, vehiclePending, "Motorcycle");
+    const vehicle = c.inventory.find((i) => i.name === "Motorcycle");
+    assert.ok(vehicle);
+    assert.equal(vehicle.focusGear, true);
+    assert.equal(vehicle.specialty, false);
+    assert.deepEqual(vehicle.fittings, ["Ghost Driver"]);
+    assert.equal(vehicle.stats.hp, 10);
+    assert.equal(vehicle.stats.size, "S");
+  });
+
+  it("resolves pickVehicle with Car (no Ghost Driver fitting)", () => {
+    const c = createCharacter();
+    const { pending } = applyFocus(c, "Ace Driver");
+    const vehiclePending = pending.find((p) => p.type === "pickVehicle");
+    resolvePending(c, vehiclePending, "Car");
+    const vehicle = c.inventory.find((i) => i.name === "Car");
+    assert.ok(vehicle);
+    assert.equal(vehicle.focusGear, true);
+    assert.equal(vehicle.specialty, false);
+    assert.equal(vehicle.fittings, undefined);
+    assert.equal(vehicle.stats.hp, 30);
+    assert.equal(vehicle.stats.size, "M");
+  });
+
+  it("throws on invalid pickVehicle choice", () => {
+    const c = createCharacter();
+    const { pending } = applyFocus(c, "Ace Driver");
+    const vehiclePending = pending.find((p) => p.type === "pickVehicle");
+    assert.throws(() => resolvePending(c, vehiclePending, "Tank"), /Invalid vehicle choice/);
   });
 
   it("grants two skills for Cyberdoc (Fix + Heal)", () => {
@@ -1184,8 +1221,8 @@ describe("addGeneratedContact", () => {
 // --- Specialty Items ---
 
 describe("SPECIALTY_ITEMS", () => {
-  it("has 12 items", () => {
-    assert.equal(SPECIALTY_ITEMS.length, 12);
+  it("has 13 items", () => {
+    assert.equal(SPECIALTY_ITEMS.length, 13);
   });
 
   it("each item has required fields", () => {

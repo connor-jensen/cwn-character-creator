@@ -28,9 +28,13 @@ export function getSpecialtyStatPills(item) {
   if (s.hp) pills.push(["HP", s.hp]);
   if (s.ac) pills.push(["AC", s.ac]);
   if (s.speed !== undefined) pills.push(["Speed", s.speed]);
+  if (s.armor) pills.push(["Armor", s.armor]);
   if (s.move) pills.push(["Move", s.move]);
   if (s.traumaTarget) pills.push(["Trauma Tgt", s.traumaTarget]);
   if (s.crew) pills.push(["Crew", s.crew]);
+  if (s.power) pills.push(["Power", s.power]);
+  if (s.mass) pills.push(["Mass", s.mass]);
+  if (s.hardpoints !== undefined) pills.push(["Hrdpt", s.hardpoints]);
   if (s.fittings !== undefined) pills.push(["Fittings", s.fittings]);
   // VR Crown
   if (s.vrCrown) pills.push(["VR Crown", s.vrCrown]);

@@ -293,6 +293,17 @@ export function resolvePending(char, pendingItem, choice) {
       updateModifiers(char);
       break;
     }
+    case "pickVehicle": {
+      const vehicles = {
+        "Motorcycle": SPECIALTY_ITEMS.find(i => i.name === "Motorcycle"),
+        "Car": SPECIALTY_ITEMS.find(i => i.name === "Car"),
+      };
+      if (!vehicles[choice]) throw new Error(`Invalid vehicle choice: ${choice}`);
+      const vehicle = { ...vehicles[choice], specialty: false, focusGear: true };
+      if (choice === "Motorcycle") vehicle.fittings = ["Ghost Driver"];
+      char.inventory.push(vehicle);
+      break;
+    }
     case "addContact": {
       char.contacts.push({
         name: choice,
@@ -415,6 +426,7 @@ export function applyFocus(char, focusName, level = 1) {
   switch (focusName) {
     case "Ace Driver":
       grantSkill(char, "Drive", pending);
+      pending.push({ type: "pickVehicle" });
       break;
     case "Alert":
       grantSkill(char, "Notice", pending);
@@ -782,8 +794,13 @@ export const SPECIALTY_ITEMS = [
   },
   {
     name: "Motorcycle", category: "vehicle", specialty: true,
-    description: "A fast, nimble bike for the street.",
-    stats: { hp: 10, ac: 13, speed: 1, traumaTarget: 10, crew: 1, size: "S" },
+    description: "Fast, cheap, and nimble, both gangers and operators find these vehicles handy for making escapes down alleys and over terrain that larger vehicles can't navigate.",
+    stats: { speed: 1, armor: 4, traumaTarget: 10, ac: 13, hp: 10, crew: 1, power: 1, mass: 3, size: "S", hardpoints: 0 },
+  },
+  {
+    name: "Car", category: "vehicle", specialty: true,
+    description: "An urban luxury, private cars are for the middle class and better, or those rough-edged slim entrepreneurs who are clever enough to keep some salvaged hulk running. This vehicle class also includes small pickup trucks and SUVs.",
+    stats: { speed: 0, armor: 6, traumaTarget: 12, ac: 11, hp: 30, crew: 5, power: 3, mass: 7, size: "M", hardpoints: 1 },
   },
   {
     name: "BanTech Roach Drone", category: "drone", specialty: true,

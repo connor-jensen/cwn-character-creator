@@ -3,13 +3,51 @@ import { ALL_SKILLS, COMBAT_SKILLS, ATTR_NAMES } from "../../constants.js";
 import {
   offerFoci,
   cyberwarePackages,
+  SPECIALTY_ITEMS,
 } from "../../../../cwn-engine.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
+import { getSpecialtyStatPills } from "../GearSelection/GearSelection.helpers.js";
 import ChoiceGrid from "../ChoiceGrid";
 import ConfirmButton from "../ConfirmButton";
 import SkillplugPicker from "./SkillplugPicker.jsx";
 import ProgramElementPicker from "./ProgramElementPicker.jsx";
 import "./PendingResolver.css";
+
+function VehiclePicker({ onResolve }) {
+  const vehicles = SPECIALTY_ITEMS.filter((i) => i.category === "vehicle");
+  return (
+    <div>
+      <p className="step-desc">Ace Driver — choose your vehicle:</p>
+      <div className="offer-grid">
+        {vehicles.map((v, i) => {
+          const pills = getSpecialtyStatPills(v);
+          return (
+            <button
+              key={v.name}
+              className="offer-card"
+              style={{ animationDelay: `${i * 0.1}s` }}
+              onClick={() => onResolve(v.name)}
+            >
+              <span className="offer-card-id">{v.stats.size}</span>
+              <h3>{v.name}</h3>
+              <p className="offer-card-desc">{v.description}</p>
+              <div className="dos-gear-pills" style={{ marginTop: "0.75rem" }}>
+                {pills.map(([label, value]) => (
+                  <span key={label || value} className="dos-gear-pill">
+                    {label ? `${label} ${value}` : value}
+                  </span>
+                ))}
+              </div>
+              {v.name === "Motorcycle" && (
+                <span className="offer-card-detail">+ Ghost Driver fitting</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function CyberwarePackagePicker({ onResolve }) {
   const [selected, setSelected] = useState(null);
@@ -108,6 +146,10 @@ export default function PendingResolver({ item, char, onResolve }) {
         </div>
       </div>
     );
+  }
+
+  if (item.type === "pickVehicle") {
+    return <VehiclePicker onResolve={onResolve} />;
   }
 
   if (item.type === "pickCyberwarePackage") {

@@ -746,13 +746,30 @@
 }
 
 .dos-gear-pill {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
   padding: 0.1rem 0.4rem;
   background: var(--bg-card);
   border: 1px solid var(--border-dim);
   border-radius: 2px;
   color: var(--text-primary);
+}
+
+.dos-gear-fittings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+
+.dos-gear-fitting {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  padding: 0.1rem 0.4rem;
+  background: rgba(0, 210, 255, 0.08);
+  border: 1px solid rgba(0, 210, 255, 0.25);
+  border-radius: 2px;
+  color: var(--cyan);
 }
 
 .dos-cyber-pkg {

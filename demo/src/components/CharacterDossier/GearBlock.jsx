@@ -1,4 +1,4 @@
-export default function GearBlock({ item, pills, typeLabel }) {
+export default function GearBlock({ item, pills, typeLabel, fittings }) {
   return (
     <div className="dos-gear-block">
       <div className="dos-gear-name">
@@ -13,6 +13,13 @@ export default function GearBlock({ item, pills, typeLabel }) {
           </span>
         ))}
       </div>
+      {fittings && fittings.length > 0 && (
+        <div className="dos-gear-fittings">
+          {fittings.map((f) => (
+            <span key={f} className="dos-gear-fitting">{f}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function CharacterDossier({ char }) {
   const weapons = char.inventory.filter((i) => i.category === "weapon");
   const hackingItems = char.inventory.filter((i) => (i.specialty || i.hackerGear) && i.category === "hacking");
   const hackerCyberware = char.inventory.filter((i) => i.hackerGear && i.category === "cyberware");
-  const vehicleDroneItems = char.inventory.filter((i) => i.specialty && (i.category === "vehicle" || i.category === "drone"));
+  const vehicleDroneItems = char.inventory.filter((i) => (i.specialty || i.focusGear) && (i.category === "vehicle" || i.category === "drone"));
   const cyberwareSpecialty = char.inventory.filter((i) => i.specialty && i.category === "cyberware");
   const techItems = char.inventory.filter((i) => i.specialty && i.category === "tech");
 
@@ -566,11 +566,16 @@ export default function CharacterDossier({ char }) {
                     item.stats.hp && ["HP", item.stats.hp],
                     item.stats.ac && ["AC", item.stats.ac],
                     item.stats.speed !== undefined && ["Speed", item.stats.speed],
+                    item.stats.armor && ["Armor", item.stats.armor],
                     item.stats.move && ["Move", item.stats.move],
                     item.stats.traumaTarget && ["Trauma Tgt", item.stats.traumaTarget],
                     item.stats.crew && ["Crew", item.stats.crew],
+                    item.stats.power && ["Power", item.stats.power],
+                    item.stats.mass && ["Mass", item.stats.mass],
+                    item.stats.hardpoints !== undefined && ["Hrdpt", item.stats.hardpoints],
                     item.stats.fittings !== undefined && ["Fittings", item.stats.fittings],
                   ].filter(Boolean)}
+                  fittings={item.fittings}
                 />
               ))}
             </section>
