@@ -48,6 +48,19 @@
   font-size: 0.875rem;
 }
 
+.dev-mode-badge {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--magenta);
+  border: 1px solid var(--magenta-50);
+  background: var(--magenta-10);
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  text-shadow: 0 0 10px var(--magenta-50);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {

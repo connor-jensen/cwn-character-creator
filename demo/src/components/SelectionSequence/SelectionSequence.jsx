@@ -13,8 +13,9 @@ export default function SelectionSequence({
   onComplete,
   poolLabel,
   showPoolDescription = true,
+  devMode = false,
 }) {
-  const [phase, setPhase] = useState("revealing");
+  const [phase, setPhase] = useState(devMode ? "pickable" : "revealing");
   const [revealedNames, setRevealedNames] = useState(new Set());
   const [eliminatedNames, setEliminatedNames] = useState(new Set());
   const [selectedName, setSelectedName] = useState(null);
@@ -25,6 +26,19 @@ export default function SelectionSequence({
 
   /* ---- Reveal animation ---- */
   useEffect(() => {
+    if (devMode) {
+      // In dev mode, skip animation: show all offered items as expanded/pickable immediately
+      const nonOffered = new Set(
+        allItems
+          .filter((item) => !offeredItems.some((o) => o.name === item.name))
+          .map((item) => item.name)
+      );
+      setRevealedNames(new Set(offeredItems.map((item) => item.name)));
+      setEliminatedNames(nonOffered);
+      setPhase("pickable");
+      return;
+    }
+
     let cancelled = false;
 
     const toReveal = offeredItems.map((item) => item.name);
@@ -58,7 +72,7 @@ export default function SelectionSequence({
 
     run();
     return () => { cancelled = true; };
-  }, [allItems, offeredItems]);
+  }, [allItems, offeredItems, devMode]);
 
   /* ---- Confirm handler ---- */
   const handleConfirm = (name) => {

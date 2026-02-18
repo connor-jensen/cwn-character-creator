@@ -568,6 +568,14 @@
   box-shadow: none;
 }
 
+/* -- Dev mode pick grid -- */
+
+.dev-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {

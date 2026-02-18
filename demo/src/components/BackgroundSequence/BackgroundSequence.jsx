@@ -6,6 +6,8 @@ import {
   offerBackgrounds,
   applyBackground,
   resolvePending,
+  resolveGrowthRoll,
+  resolveLearningPick,
   backgrounds as allBackgrounds,
 } from "../../../../cwn-engine.js";
 import { COMBAT_SKILLS } from "../../constants.js";
@@ -30,7 +32,7 @@ import "./BackgroundSequence.css";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export default function BackgroundSequence({ char, onComplete }) {
+export default function BackgroundSequence({ char, onComplete, devMode = false }) {
   /* ---- pre-compute rolls ---- */
   const preRolls = useRef(null);
   if (preRolls.current === null) {
@@ -70,12 +72,13 @@ export default function BackgroundSequence({ char, onComplete }) {
   /* ---- roll phase hook (die spinning, auto-lock, resolve handlers) ---- */
   const {
     spinValue, dieLocked, highlightedRow,
-    growthEntry, resolveInfo,
+    growthEntry, setGrowthEntry,
+    resolveInfo, setResolveInfo,
     selectedResolveChoice, setSelectedResolveChoice,
-    rollOutcomes,
+    rollOutcomes, setRollOutcomes,
     handleConfirmResolve,
     resolveGrowthAllocate,
-  } = useRollPhase({ phase, setPhase, wcRef, setWorkingChar, bgDataRef, preRolls });
+  } = useRollPhase({ phase, setPhase, wcRef, setWorkingChar, bgDataRef, preRolls, devMode });
 
   /* ---- phase helpers (delegated to helpers module) ---- */
   const getRollDisplayState = (rollPhase, rollKey) =>
@@ -87,6 +90,17 @@ export default function BackgroundSequence({ char, onComplete }) {
      ================================================================ */
   useEffect(() => {
     if (phase !== "eliminate") return;
+
+    if (devMode) {
+      // Dev mode: show all backgrounds immediately as pickable cards
+      setOffers(allBackgrounds);
+      setEliminatedNames(new Set());
+      setRevealedNames(new Set(allBackgrounds.map((b) => b.name)));
+      setBgPhase("pickable");
+      setPhase("pick");
+      return;
+    }
+
     let cancelled = false;
     setEliminatedNames(new Set());
     setRevealedNames(new Set());
@@ -127,7 +141,7 @@ export default function BackgroundSequence({ char, onComplete }) {
 
     run();
     return () => { cancelled = true; };
-  }, [phase]);
+  }, [phase, devMode]);
 
   /* ================================================================
      HANDLERS
@@ -143,11 +157,12 @@ export default function BackgroundSequence({ char, onComplete }) {
     const { pending, pendingChoices } = applyBackground(next, bgName);
     setWorkingChar(next);
     setBgData(pendingChoices);
+    const nextPhase = devMode ? "growth_pick" : "growth_roll";
     if (pending.length > 0) {
       setPendingItems(pending);
       setPhase("free_skill_resolve");
     } else {
-      setPhase("growth_roll");
+      setPhase(nextPhase);
     }
   };
 
@@ -160,7 +175,52 @@ export default function BackgroundSequence({ char, onComplete }) {
       setPendingItems(remaining);
     } else {
       setPendingItems([]);
-      setPhase("growth_roll");
+      setPhase(devMode ? "growth_pick" : "growth_roll");
+    }
+  };
+
+  /* ---- DEV MODE PICK HANDLERS ---- */
+
+  const handleDevGrowthPick = (entry) => {
+    setGrowthEntry(entry);
+    if (!entry.startsWith("+") && entry !== "Any Skill") {
+      const next = deepClone(workingChar);
+      try {
+        resolveGrowthRoll(next, entry, {});
+        setWorkingChar(next);
+        setRollOutcomes(prev => ({ ...prev, growth: `Gained ${entry}` }));
+        setPhase("growth_done");
+      } catch {
+        setResolveInfo({ type: "growth_redirect", original: entry });
+        setPhase("growth_resolve");
+      }
+    } else {
+      const type =
+        entry === "Any Skill" ? "growth_any_skill" :
+        entry === "+1 Physical, +1 Mental" ? "growth_compound_stat" :
+        "growth_stat";
+      setResolveInfo({ type, entry });
+      setPhase("growth_resolve");
+    }
+  };
+
+  const handleDevLearningPick = (entry, learnKey) => {
+    if (entry === "Any Skill" || entry === "Any Combat") {
+      setResolveInfo({
+        type: entry === "Any Combat" ? "learning_combat" : "learning_any_skill",
+      });
+      setPhase(learnKey === "learn1" ? "learn1_resolve" : "learn2_resolve");
+    } else {
+      const next = deepClone(workingChar);
+      try {
+        resolveLearningPick(next, entry);
+        setWorkingChar(next);
+        setRollOutcomes(prev => ({ ...prev, [learnKey]: `Learned ${entry}` }));
+        setPhase(learnKey === "learn1" ? "learn1_done" : "learn2_done");
+      } catch {
+        setResolveInfo({ type: "learning_redirect", original: entry });
+        setPhase(learnKey === "learn1" ? "learn1_resolve" : "learn2_resolve");
+      }
     }
   };
 
@@ -281,6 +341,87 @@ export default function BackgroundSequence({ char, onComplete }) {
               )}
               onSelect={handleFreeSkillResolve}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ---- DEV MODE: GROWTH PICK ---- */}
+      <AnimatePresence>
+        {phase === "growth_pick" && bgData && (
+          <motion.div
+            key="growth-pick"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-resolve-inline"
+          >
+            <p className="step-desc">Pick a growth entry:</p>
+            <div className="dev-pick-grid">
+              {bgData.growth.map((entry, i) => (
+                <button
+                  key={i}
+                  className="btn-choice"
+                  onClick={() => handleDevGrowthPick(entry)}
+                >
+                  {entry}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ---- DEV MODE: LEARNING 1 PICK ---- */}
+      <AnimatePresence>
+        {phase === "learn1_pick" && bgData && (
+          <motion.div
+            key="learn1-pick"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-resolve-inline"
+          >
+            <p className="step-desc">Pick a learning skill (1/2):</p>
+            <div className="dev-pick-grid">
+              {bgData.learning.map((entry, i) => (
+                <button
+                  key={i}
+                  className="btn-choice"
+                  onClick={() => handleDevLearningPick(entry, "learn1")}
+                >
+                  {entry}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ---- DEV MODE: LEARNING 2 PICK ---- */}
+      <AnimatePresence>
+        {phase === "learn2_pick" && bgData && (
+          <motion.div
+            key="learn2-pick"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-resolve-inline"
+          >
+            <p className="step-desc">Pick a learning skill (2/2):</p>
+            <div className="dev-pick-grid">
+              {bgData.learning.map((entry, i) => (
+                <button
+                  key={i}
+                  className="btn-choice"
+                  onClick={() => handleDevLearningPick(entry, "learn2")}
+                >
+                  {entry}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

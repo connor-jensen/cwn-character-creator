@@ -1,8 +1,8 @@
 export const PHASE_ORDER = [
   "eliminate", "pick", "free_skill_resolve",
-  "growth_roll", "growth_resolve", "growth_done",
-  "learn1_roll", "learn1_resolve", "learn1_done",
-  "learn2_roll", "learn2_resolve", "learn2_done",
+  "growth_pick", "growth_roll", "growth_resolve", "growth_done",
+  "learn1_pick", "learn1_roll", "learn1_resolve", "learn1_done",
+  "learn2_pick", "learn2_roll", "learn2_resolve", "learn2_done",
   "confirm",
 ];
 
@@ -11,9 +11,9 @@ export function phaseAtLeast(phase, target) {
 }
 
 export function getActiveRollType(phase) {
-  if (["growth_roll", "growth_resolve", "growth_done"].includes(phase)) return "growth";
-  if (["learn1_roll", "learn1_resolve", "learn1_done"].includes(phase)) return "learn1";
-  if (["learn2_roll", "learn2_resolve", "learn2_done"].includes(phase)) return "learn2";
+  if (["growth_pick", "growth_roll", "growth_resolve", "growth_done"].includes(phase)) return "growth";
+  if (["learn1_pick", "learn1_roll", "learn1_resolve", "learn1_done"].includes(phase)) return "learn1";
+  if (["learn2_pick", "learn2_roll", "learn2_resolve", "learn2_done"].includes(phase)) return "learn2";
   return null;
 }
 

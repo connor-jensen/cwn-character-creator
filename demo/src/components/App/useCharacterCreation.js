@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   createCharacter,
   setStatToFourteen,
@@ -15,6 +15,8 @@ import {
   getContactAllotment,
   offerEdges,
   offerFoci,
+  edges as allEdges,
+  foci as allFoci,
   updateModifiers,
 } from "../../../../cwn-engine.js";
 import { STEPS } from "../../constants.js";
@@ -32,14 +34,31 @@ export default function useCharacterCreation() {
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [generatedContacts, setGeneratedContacts] = useState(null);
   const [rollMode, setRollMode] = useState("standard");
+  const [devMode, setDevMode] = useState(false);
+  const devModeRef = useRef(false);
+  const toggleDevMode = useCallback(() => {
+    setDevMode(prev => {
+      const next = !prev;
+      devModeRef.current = next;
+      return next;
+    });
+  }, []);
 
   const currentStep = STEPS[step];
 
   const offersForStep = (stepName, currentChar) => {
     if (stepName === "pick_edge_1" || stepName === "pick_edge_2") {
+      if (devModeRef.current) {
+        const exclude = currentChar.edges.map((e) => (typeof e === "string" ? e : e.name));
+        return allEdges.filter((e) => !exclude.includes(e.name));
+      }
       return offerEdges(currentChar, 3);
     }
     if (stepName === "pick_focus") {
+      if (devModeRef.current) {
+        const exclude = currentChar.foci.map((f) => f.name);
+        return allFoci.filter((f) => !exclude.includes(f.name));
+      }
       return offerFoci(currentChar, 3);
     }
     return null;
@@ -184,6 +203,7 @@ export default function useCharacterCreation() {
     char, setChar,
     step,
     rolling, rollMode, setRollMode,
+    devMode, toggleDevMode,
     offers,
     pendingQueue,
     selectedWeapon, setSelectedWeapon,

@@ -17,6 +17,7 @@ export default function useRollPhase({
   setWorkingChar,
   bgDataRef,
   preRolls,
+  devMode = false,
 }) {
   const [spinValue, setSpinValue] = useState(1);
   const [dieLocked, setDieLocked] = useState(false);
@@ -136,18 +137,20 @@ export default function useRollPhase({
   /* ---- AUTO-ADVANCE from done phases ---- */
   useEffect(() => {
     if (phase === "growth_done") {
-      const timer = setTimeout(() => setPhase("learn1_roll"), 1000);
+      const next = devMode ? "learn1_pick" : "learn1_roll";
+      const timer = setTimeout(() => setPhase(next), 1000);
       return () => clearTimeout(timer);
     }
     if (phase === "learn1_done") {
-      const timer = setTimeout(() => setPhase("learn2_roll"), 1000);
+      const next = devMode ? "learn2_pick" : "learn2_roll";
+      const timer = setTimeout(() => setPhase(next), 1000);
       return () => clearTimeout(timer);
     }
     if (phase === "learn2_done") {
       const timer = setTimeout(() => setPhase("confirm"), 1000);
       return () => clearTimeout(timer);
     }
-  }, [phase, setPhase]);
+  }, [phase, setPhase, devMode]);
 
   /* ---- RESOLVE HANDLERS ---- */
 
@@ -224,10 +227,13 @@ export default function useRollPhase({
     dieLocked,
     highlightedRow,
     growthEntry,
+    setGrowthEntry,
     resolveInfo,
+    setResolveInfo,
     selectedResolveChoice,
     setSelectedResolveChoice,
     rollOutcomes,
+    setRollOutcomes,
     handleConfirmResolve,
     resolveGrowthAllocate,
   };

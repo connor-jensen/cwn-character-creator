@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -22,6 +23,7 @@ export default function App() {
     char, setChar,
     step,
     rolling, rollMode, setRollMode,
+    devMode, toggleDevMode,
     offers,
     pendingQueue,
     selectedWeapon, setSelectedWeapon,
@@ -44,10 +46,21 @@ export default function App() {
     handleFinish,
   } = useCharacterCreation();
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.metaKey && e.key === "k") {
+        e.preventDefault();
+        toggleDevMode();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toggleDevMode]);
+
   if (pendingQueue.length > 0) {
     return (
       <div className="app">
-        <Header step={step} />
+        <Header step={step} devMode={devMode} />
         <ProgressBar step={step} onStepClick={handleStepClick} />
         <div className="layout">
           <div className="main">
@@ -71,7 +84,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header step={step} />
+      <Header step={step} devMode={devMode} />
       <ProgressBar step={step} onStepClick={handleStepClick} />
 
       <div className="layout">
@@ -132,6 +145,7 @@ export default function App() {
                   <BackgroundSequence
                     char={char}
                     onComplete={handleBackgroundComplete}
+                    devMode={devMode}
                   />
                 </div>
               )}
@@ -147,6 +161,7 @@ export default function App() {
                       offeredItems={offers}
                       poolLabel="Edge"
                       showPoolDescription={false}
+                      devMode={devMode}
                       renderCardContent={(edge, offerIdx) => (
                         <>
                           <span className="offer-card-id">
@@ -172,6 +187,7 @@ export default function App() {
                       allItems={allFoci}
                       offeredItems={offers}
                       poolLabel="Focus"
+                      devMode={devMode}
                       renderCardContent={(focus, offerIdx) => (
                         <>
                           <span className="offer-card-id">
