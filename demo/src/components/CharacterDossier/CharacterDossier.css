@@ -1162,7 +1162,23 @@
 .dos-download-row {
   display: flex;
   justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-dim);
+}
+
+.btn-action-success {
+  border-color: var(--green-50);
+  color: var(--green);
+  transition: all 0.2s ease;
+}
+
+.btn-action-success .btn-prompt {
+  color: var(--green);
+}
+
+.btn-action-success::before {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.1), transparent);
 }

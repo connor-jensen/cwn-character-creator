@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -15,10 +15,15 @@ import DiceRollSequence from "../DiceRollSequence";
 import BackgroundSequence from "../BackgroundSequence";
 import SelectionSequence from "../SelectionSequence";
 import ContactSequence from "../ContactSequence";
+import OperatorManager from "../OperatorManager";
 import { ALL_SKILLS } from "../../constants.js";
 import "./App.css";
 
 export default function App() {
+  const [view, setView] = useState("creator");
+
+  const handleNavigate = useCallback((v) => setView(v), []);
+
   const {
     char, setChar,
     step,
@@ -57,10 +62,19 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [toggleDevMode]);
 
+  if (view === "manager") {
+    return (
+      <div className="app">
+        <Header step={step} devMode={devMode} view="manager" onNavigate={handleNavigate} />
+        <OperatorManager onNavigate={handleNavigate} />
+      </div>
+    );
+  }
+
   if (pendingQueue.length > 0) {
     return (
       <div className="app">
-        <Header step={step} devMode={devMode} />
+        <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} />
         <ProgressBar step={step} onStepClick={handleStepClick} />
         <div className="layout">
           <div className="main">
@@ -84,7 +98,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header step={step} devMode={devMode} />
+      <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} />
       <ProgressBar step={step} onStepClick={handleStepClick} />
 
       <div className="layout">
