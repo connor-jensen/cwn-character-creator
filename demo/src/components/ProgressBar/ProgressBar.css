@@ -54,6 +54,16 @@
   color: var(--cyan);
 }
 
+.progress-segment.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.progress-label.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {

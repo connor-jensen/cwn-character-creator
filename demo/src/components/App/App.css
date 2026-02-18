@@ -231,6 +231,132 @@
   border-color: var(--cyan);
 }
 
+/* ===== Step Review (locked step) ===== */
+
+.step-review {
+  border-color: var(--border);
+}
+
+.step-review::before {
+  background: linear-gradient(90deg, var(--text-muted), transparent);
+  opacity: 0.3;
+}
+
+.step-review-note {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.step-review-section {
+  margin-bottom: 1.25rem;
+}
+
+.step-review-name {
+  font-size: 1rem;
+  color: var(--text-bright);
+  margin-bottom: 0.35rem;
+}
+
+.step-review-detail {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.step-review-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.step-review-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.step-review-gear-item {
+  margin-bottom: 0.5rem;
+}
+
+.step-review-gear-item strong {
+  display: block;
+  color: var(--text-bright);
+  font-size: 0.9rem;
+}
+
+.step-review-contact {
+  margin-bottom: 0.5rem;
+}
+
+.step-review-contact strong {
+  display: block;
+  color: var(--text-bright);
+  font-size: 0.9rem;
+}
+
+.step-review-return {
+  margin-top: 1.5rem;
+}
+
+/* ===== Dev Overlay ===== */
+
+.dev-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.dev-toolbar {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(20, 0, 30, 0.9);
+  border-top: 1px solid var(--magenta, #f0f);
+  pointer-events: auto;
+}
+
+.dev-toolbar-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--magenta, #f0f);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+.dev-reset-btn {
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  border: 1px solid var(--magenta, #f0f);
+  color: var(--magenta, #f0f);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-reset-btn:hover {
+  background: var(--magenta, #f0f);
+  color: var(--bg-deep, #000);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {

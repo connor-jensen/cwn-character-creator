@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   createCharacter,
   setStatToFourteen,
@@ -26,6 +26,7 @@ import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 export default function useCharacterCreation() {
   const [char, setChar] = useState(createCharacter);
   const [step, setStep] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const [rolling, setRolling] = useState(false);
   const [offers, setOffers] = useState(null);
   const [pendingQueue, setPendingQueue] = useState([]);
@@ -34,6 +35,7 @@ export default function useCharacterCreation() {
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [generatedContacts, setGeneratedContacts] = useState(null);
   const [rollMode, setRollMode] = useState("standard");
+  const [bonusSkillPick, setBonusSkillPick] = useState(null);
   const [devMode, setDevMode] = useState(false);
   const devModeRef = useRef(false);
   const toggleDevMode = useCallback(() => {
@@ -45,6 +47,7 @@ export default function useCharacterCreation() {
   }, []);
 
   const currentStep = STEPS[step];
+  const isViewingLockedStep = step < maxStepReached;
 
   const offersForStep = (stepName, currentChar) => {
     if (stepName === "pick_edge_1" || stepName === "pick_edge_2") {
@@ -73,15 +76,27 @@ export default function useCharacterCreation() {
       if (allotment.length === 0) {
         setOffers(null);
         setStep(nextIdx + 1);
+        setMaxStepReached((prev) => Math.max(prev, nextIdx + 1));
         return;
       }
       setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
     }
 
     setStep(nextIdx);
+    setMaxStepReached((prev) => Math.max(prev, nextIdx));
   }, []);
 
   const handleStepClick = (i) => {
+    // Can't skip ahead past the frontier
+    if (i > maxStepReached) return;
+
+    // Navigating to a locked (completed) step — just view it, preserve working state
+    if (i < maxStepReached) {
+      setStep(i);
+      return;
+    }
+
+    // i === maxStepReached — restore working state at the frontier (existing behavior)
     const stepName = STEPS[i];
     setOffers(offersForStep(stepName, char));
     setRolling(false);
@@ -160,6 +175,7 @@ export default function useCharacterCreation() {
   const handleBonusSkill = (skillName) => {
     const next = deepClone(char);
     addBonusSkill(next, skillName);
+    setBonusSkillPick(skillName);
     setChar(next);
     advanceTo(step + 1, next);
   };
@@ -196,12 +212,39 @@ export default function useCharacterCreation() {
     setChar(next);
   };
 
+  // Dev mode toggle (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        toggleDevMode();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleDevMode]);
+
+  const handleDevReset = useCallback(() => {
+    setChar(createCharacter());
+    setStep(0);
+    setMaxStepReached(0);
+    setRolling(false);
+    setOffers(null);
+    setPendingQueue([]);
+    setSelectedWeapon(null);
+    setSelectedArmor(null);
+    setSelectedSpecialty(null);
+    setGeneratedContacts(null);
+    setRollMode("standard");
+    setBonusSkillPick(null);
+  }, []);
+
   const availableSkills = getAvailableSkills(char);
   const isFinalized = currentStep === "done" && char.hp > 0;
 
   return {
     char, setChar,
-    step,
+    step, maxStepReached,
     rolling, rollMode, setRollMode,
     devMode, toggleDevMode,
     offers,
@@ -213,6 +256,8 @@ export default function useCharacterCreation() {
     currentStep,
     availableSkills,
     isFinalized,
+    isViewingLockedStep,
+    bonusSkillPick,
     handleStepClick,
     handleResolvePending,
     handleStartRoll,
@@ -224,5 +269,6 @@ export default function useCharacterCreation() {
     handleEquipGear,
     handleContactsComplete,
     handleFinish,
+    handleDevReset,
   };
 }
