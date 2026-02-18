@@ -25,7 +25,7 @@ export default function CharacterDossier({ char }) {
   const hackingItems = char.inventory.filter((i) => (i.specialty || i.hackerGear) && i.category === "hacking");
   const hackerCyberware = char.inventory.filter((i) => i.hackerGear && i.category === "cyberware");
   const vehicleDroneItems = char.inventory.filter((i) => (i.specialty || i.focusGear) && (i.category === "vehicle" || i.category === "drone"));
-  const cyberwareSpecialty = char.inventory.filter((i) => i.specialty && i.category === "cyberware");
+  const cyberwareSpecialty = char.inventory.filter((i) => (i.specialty || i.focusGear) && i.category === "cyberware");
   const techItems = char.inventory.filter((i) => i.specialty && i.category === "tech");
 
   const fid = useMemo(() => fileHash(char.name), [char.name]);
@@ -557,9 +557,9 @@ export default function CharacterDossier({ char }) {
           {vehicleDroneItems.length > 0 && (
             <section className="dos-section">
               <SectionHeader num="12" label="Vehicles & Drones" />
-              {vehicleDroneItems.map((item) => (
+              {vehicleDroneItems.map((item, idx) => (
                 <GearBlock
-                  key={item.name}
+                  key={`${item.name}-${idx}`}
                   item={item}
                   typeLabel={item.category}
                   pills={[
@@ -574,6 +574,8 @@ export default function CharacterDossier({ char }) {
                     item.stats.mass && ["Mass", item.stats.mass],
                     item.stats.hardpoints !== undefined && ["Hrdpt", item.stats.hardpoints],
                     item.stats.fittings !== undefined && ["Fittings", item.stats.fittings],
+                    item.stats.hardpoints !== undefined && ["Hardpoints", item.stats.hardpoints],
+                    item.stats.enc && ["ENC", item.stats.enc],
                   ].filter(Boolean)}
                   fittings={item.fittings}
                 />

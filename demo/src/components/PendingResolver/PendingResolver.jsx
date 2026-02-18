@@ -3,7 +3,7 @@ import { ALL_SKILLS, COMBAT_SKILLS, ATTR_NAMES } from "../../constants.js";
 import {
   offerFoci,
   cyberwarePackages,
-  SPECIALTY_ITEMS,
+  DRONE_PILOT_OPTIONS,
 } from "../../../../cwn-engine.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 import { getSpecialtyStatPills } from "../GearSelection/GearSelection.helpers.js";
@@ -92,6 +92,42 @@ function CyberwarePackagePicker({ onResolve }) {
   );
 }
 
+function DronePicker({ onResolve }) {
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <div>
+      <p className="step-desc">Choose your starting drone:</p>
+      <div className="cyber-package-grid">
+        {DRONE_PILOT_OPTIONS.map((opt) => (
+          <button
+            key={opt.label}
+            className={`cyber-package-card${selected === opt.label ? " cyber-package-selected" : ""}`}
+            onClick={() => setSelected(opt.label)}
+          >
+            <h3>{opt.label}</h3>
+            <p className="cyber-package-desc">{opt.description}</p>
+            <div className="cyber-package-items">
+              {opt.items.slice(0, 1).map((d) => (
+                <div key={d.name} className="cyber-item">
+                  <span className="cyber-item-stats">
+                    AC {d.stats.ac} &middot; HP {d.stats.hp} &middot; TT {d.stats.traumaTarget} &middot; {d.stats.move} &middot; Fittings {d.stats.fittings} &middot; ENC {d.stats.enc}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
+      <ConfirmButton
+        isVisible={!!selected}
+        label={`Deploy ${selected}`}
+        onClick={() => onResolve(selected)}
+      />
+    </div>
+  );
+}
+
 export default function PendingResolver({ item, char, onResolve }) {
   const skills = item.options
     ? item.options
@@ -154,6 +190,10 @@ export default function PendingResolver({ item, char, onResolve }) {
 
   if (item.type === "pickCyberwarePackage") {
     return <CyberwarePackagePicker onResolve={onResolve} />;
+  }
+
+  if (item.type === "pickDrone") {
+    return <DronePicker onResolve={onResolve} />;
   }
 
   if (item.type === "pickSkillplugs") {

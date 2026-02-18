@@ -363,6 +363,16 @@ export function resolvePending(char, pendingItem, choice) {
       }
       break;
     }
+    case "pickDrone": {
+      const droneOption = DRONE_PILOT_OPTIONS.find((o) => o.label === choice);
+      if (!droneOption) throw new Error(`Unknown drone option: ${choice}`);
+      // Clear any previous focus drones (idempotent)
+      char.inventory = char.inventory.filter((i) => !(i.focusGear && i.category === "drone"));
+      for (const drone of droneOption.items) {
+        char.inventory.push({ ...drone });
+      }
+      break;
+    }
     case "pickSkillplugs": {
       if (!Array.isArray(choice)) {
         throw new Error("Skillplug selection must be an array of skill names.");
@@ -459,6 +469,16 @@ export function applyFocus(char, focusName, level = 1) {
     case "Drone Pilot":
       grantSkill(char, "Drive", pending);
       grantSkill(char, "Fix", pending);
+      // Focus grants a free Remote Control Unit cyberware
+      char.inventory.push({
+        name: "Remote Control Unit", category: "cyberware", focusGear: true,
+        description: "Neurally-integrated control link for near-range control of drones or remote-rigged vehicles.",
+        stats: { strain: 2, concealment: "Touch", effect: "Remote control drones/vehicles" },
+      });
+      pending.push({
+        type: "pickDrone",
+        reason: "Drone Pilot: Choose your starting drone",
+      });
       break;
     case "Expert Programmer":
       grantSkill(char, "Program", pending);
@@ -804,13 +824,50 @@ export const SPECIALTY_ITEMS = [
   },
   {
     name: "BanTech Roach Drone", category: "drone", specialty: true,
-    description: "Small wheeled drone for remote scouting.",
+    description: "Small wheeled drone for remote scouting. Comes with a control board.",
     stats: { hp: 8, ac: 13, move: "10m ground", fittings: 3, hardpoints: 0, enc: 3 },
+    companions: [
+      {
+        name: "Control Board", category: "tech", specialty: true,
+        description: "Remote control for one drone at a time. Must be Readied to use. -2 penalty to hit/skill checks unless user has a Cranial Jack.",
+        stats: { enc: 1, effect: "Command 1 drone" },
+      },
+    ],
   },
   {
     name: "Kit, Cyberdoc", category: "tech", specialty: true,
     description: "Specialized medical kit for repairing your team's chrome.",
     stats: { effect: "Maintenance/repair of cyberware", enc: 2 },
+  },
+];
+
+export const DRONE_PILOT_OPTIONS = [
+  {
+    label: "BanTech Roach",
+    description: "A small wheeled drone popular among pilots who need more usable mass and power than a flying drone this size could muster.",
+    items: [
+      {
+        name: "BanTech Roach", category: "drone", focusGear: true,
+        description: "Small wheeled ground drone for remote scouting.",
+        stats: { ac: 13, traumaTarget: 6, hp: 8, fittings: 3, move: "10m ground", hardpoints: 0, enc: 3 },
+      },
+    ],
+  },
+  {
+    label: "2\u00d7 Shintetsu Mouse",
+    description: "A pair of fist-sized wheeled drones. Cheap and portable \u2014 basic eyes and ears in a tiny package.",
+    items: [
+      {
+        name: "Shintetsu Mouse", category: "drone", focusGear: true,
+        description: "Fist-sized wheeled micro-drone.",
+        stats: { ac: 13, traumaTarget: 6, hp: 1, fittings: 0, move: "5m ground", hardpoints: 0, enc: 1 },
+      },
+      {
+        name: "Shintetsu Mouse", category: "drone", focusGear: true,
+        description: "Fist-sized wheeled micro-drone.",
+        stats: { ac: 13, traumaTarget: 6, hp: 1, fittings: 0, move: "5m ground", hardpoints: 0, enc: 1 },
+      },
+    ],
   },
 ];
 
@@ -825,6 +882,9 @@ export function equipSpecialtyItem(char, itemName) {
   // Idempotent: clear previous specialty item
   char.inventory = char.inventory.filter((i) => !i.specialty);
   char.inventory.push({ ...item });
+  if (item.companions) {
+    for (const c of item.companions) char.inventory.push({ ...c });
+  }
   return char;
 }
 

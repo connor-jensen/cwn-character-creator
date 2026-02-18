@@ -579,12 +579,18 @@ describe("applyFocus", () => {
     assert.ok(pending[1].reason.includes("Heal"));
   });
 
-  it("grants two skills for Drone Pilot (Drive + Fix)", () => {
+  it("grants two skills for Drone Pilot (Drive + Fix), RCU cyberware, and offers drone pick", () => {
     const c = createCharacter();
     const { pending } = applyFocus(c, "Drone Pilot");
     assert.equal(c.skills.Drive, 0);
     assert.equal(c.skills.Fix, 0);
-    assert.equal(pending.length, 0);
+    const rcu = c.inventory.find((i) => i.name === "Remote Control Unit");
+    assert.ok(rcu, "should grant Remote Control Unit cyberware");
+    assert.equal(rcu.category, "cyberware");
+    assert.equal(rcu.focusGear, true);
+    assert.equal(rcu.stats.strain, 2);
+    const dronePending = pending.find((p) => p.type === "pickDrone");
+    assert.ok(dronePending, "should have a pickDrone pending");
   });
 
   it("Roamer offers skill choice and grants Drive", () => {
@@ -674,6 +680,44 @@ describe("resolvePending", () => {
     const item = { type: "pickSkill", category: "any", options: ["Notice", "Talk"] };
     resolvePending(c, item, "Notice");
     assert.equal(c.skills.Notice, 0);
+  });
+});
+
+describe("pickDrone via resolvePending", () => {
+  it("adds BanTech Roach to inventory", () => {
+    const c = createCharacter();
+    const item = { type: "pickDrone", reason: "Drone Pilot: Choose your starting drone" };
+    resolvePending(c, item, "BanTech Roach");
+    const drones = c.inventory.filter((i) => i.category === "drone");
+    assert.equal(drones.length, 1);
+    assert.equal(drones[0].name, "BanTech Roach");
+    assert.equal(drones[0].focusGear, true);
+  });
+
+  it("adds two Shintetsu Mice to inventory", () => {
+    const c = createCharacter();
+    const item = { type: "pickDrone", reason: "Drone Pilot: Choose your starting drone" };
+    resolvePending(c, item, "2\u00d7 Shintetsu Mouse");
+    const drones = c.inventory.filter((i) => i.category === "drone");
+    assert.equal(drones.length, 2);
+    assert.equal(drones[0].name, "Shintetsu Mouse");
+    assert.equal(drones[1].name, "Shintetsu Mouse");
+  });
+
+  it("rejects unknown drone option", () => {
+    const c = createCharacter();
+    const item = { type: "pickDrone" };
+    assert.throws(() => resolvePending(c, item, "Unknown Drone"), /Unknown drone option/);
+  });
+
+  it("replaces previous focus drones on re-pick", () => {
+    const c = createCharacter();
+    const item = { type: "pickDrone" };
+    resolvePending(c, item, "BanTech Roach");
+    resolvePending(c, item, "2\u00d7 Shintetsu Mouse");
+    const drones = c.inventory.filter((i) => i.category === "drone");
+    assert.equal(drones.length, 2);
+    assert.equal(drones[0].name, "Shintetsu Mouse");
   });
 });
 
@@ -1292,6 +1336,24 @@ describe("equipSpecialtyItem", () => {
     const c = createCharacter();
     const result = equipSpecialtyItem(c, "Rifle");
     assert.equal(result, c);
+  });
+
+  it("includes companion items (BanTech Roach Drone + Control Board)", () => {
+    const c = createCharacter();
+    equipSpecialtyItem(c, "BanTech Roach Drone");
+    const drone = c.inventory.find((i) => i.name === "BanTech Roach Drone");
+    const board = c.inventory.find((i) => i.name === "Control Board");
+    assert.ok(drone, "should have drone");
+    assert.ok(board, "should have control board companion");
+    assert.equal(board.stats.enc, 1);
+  });
+
+  it("clears companion items when switching specialty", () => {
+    const c = createCharacter();
+    equipSpecialtyItem(c, "BanTech Roach Drone");
+    equipSpecialtyItem(c, "Rifle");
+    const board = c.inventory.find((i) => i.name === "Control Board");
+    assert.ok(!board, "control board should be removed when switching specialty");
   });
 });
 
