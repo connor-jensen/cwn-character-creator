@@ -66,3 +66,4 @@ This repo uses git worktrees for parallel development across multiple Claude Cod
 - **Work on your worktree branch** — check `git branch` to confirm you're on `workspace-1`, `workspace-2`, or `workspace-3`
 - **Push your branch** when work is ready for merge: `git push -u origin <branch>`
 - **Merges to main use squash merge** — the main session handles this via `git merge --squash <branch>`
+- **After merging**, reset the workspace branch so it's ready for the next feature: `git push origin main:<branch> --force`
