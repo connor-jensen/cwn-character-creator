@@ -821,6 +821,14 @@
   margin-top: 0.75rem;
 }
 
+.dos-programs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .dos-programs-label {
   font-family: var(--font-display);
   font-size: 0.6rem;
@@ -828,34 +836,76 @@
   color: var(--text-muted);
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  margin-bottom: 0.4rem;
-  margin-top: 0.75rem;
 }
 
-.dos-programs-label:first-child {
-  margin-top: 0;
+/* Segmented memory bar */
+.dos-mem-track {
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.dos-program-table {
+.dos-mem-seg {
+  width: 10px;
+  height: 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  transition: all 0.25s ease;
+}
+
+.dos-mem-seg-filled {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: var(--cyan);
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+}
+
+.dos-mem-count {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--cyan);
+  margin-left: 0.35rem;
+  letter-spacing: 0.05em;
+}
+
+.dos-mem-count-full {
+  color: var(--amber);
+}
+
+/* ── Loaded Programs tables ── */
+.dos-loaded-sublabel {
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 0.6rem;
+  margin-bottom: 0.2rem;
+}
+
+.dos-loaded-sublabel-verb { color: var(--magenta); }
+.dos-loaded-sublabel-subject { color: var(--green); }
+
+.dos-loaded-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.75rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
-.dos-program-table th {
+.dos-loaded-table th {
   font-family: var(--font-display);
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-align: left;
-  padding: 0.3rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--border-dim);
 }
 
-.dos-program-table td {
+.dos-loaded-table td {
   padding: 0.3rem 0.5rem;
   color: var(--text-secondary);
   font-family: var(--font-mono);
@@ -863,135 +913,231 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.dos-program-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+.dos-loaded-table tbody tr {
+  transition: background 0.15s ease;
 }
 
-.dos-program-table-verb .dos-program-name {
+.dos-loaded-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.dos-loaded-table-verb .dos-loaded-name {
   color: var(--magenta);
   font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
 }
 
-.dos-program-table-subject .dos-program-name {
+.dos-loaded-table-subject .dos-loaded-name {
   color: var(--green);
   font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
 }
 
-.dos-program-use {
+.dos-loaded-use {
   font-family: var(--font-body, inherit);
   font-style: italic;
   color: var(--text-muted);
+  font-size: 0.68rem;
 }
 
-.dos-program-footnote {
-  font-size: 0.65rem;
+.dos-loaded-empty {
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-style: italic;
-  margin-bottom: 0.25rem;
+  padding: 0.75rem 0;
+  opacity: 0.7;
 }
 
-.dos-programs-sublabel {
+.dos-loaded-footnote {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.15rem;
+  opacity: 0.7;
+}
+
+/* ── Library toggle button ── */
+.dos-library-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  margin-top: 0.75rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dos-library-toggle:hover {
+  border-color: var(--border);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.dos-library-toggle-open {
+  border-color: var(--cyan-20);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.dos-library-toggle-icon {
+  font-size: 0.5rem;
+  color: var(--cyan);
+  transition: transform 0.2s ease;
+  width: 0.6rem;
+  text-align: center;
+}
+
+.dos-library-toggle-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: none;
+}
+
+/* ── Library panel ── */
+.dos-library {
+  border: 1px solid var(--cyan-20);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  padding: 0.5rem;
+  background: var(--bg-deep);
+  animation: dosLibOpen 0.2s ease-out;
+}
+
+@keyframes dosLibOpen {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dos-library-section {
+  margin-bottom: 0.5rem;
+}
+
+.dos-library-section:last-child {
+  margin-bottom: 0;
+}
+
+.dos-library-divider {
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.dos-library-divider-verb { color: var(--magenta); }
+.dos-library-divider-subject { color: var(--green); }
+
+/* Library items */
+.dos-library-item {
+  padding: 0.5rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.15s ease;
+}
+
+.dos-library-item:last-child {
+  border-bottom: none;
+}
+
+.dos-library-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dos-library-item-loaded {
+  background: rgba(0, 229, 255, 0.03);
+}
+
+.dos-library-item-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dos-library-item-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  min-width: 5rem;
+}
+
+.dos-library-item-name-verb { color: var(--magenta); }
+.dos-library-item-name-subject { color: var(--green); }
+
+.dos-library-item-stats {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.dos-library-slot-btn {
   font-family: var(--font-display);
   font-size: 0.55rem;
   font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-top: 0.5rem;
-  margin-bottom: 0.2rem;
-}
-
-.dos-program-th-load,
-.dos-program-td-load {
-  width: 1.5rem;
-  text-align: center;
-  padding-left: 0.25rem;
-  padding-right: 0;
-}
-
-.dos-program-check {
-  appearance: none;
-  width: 0.85rem;
-  height: 0.85rem;
-  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
   border-radius: 2px;
-  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
   cursor: pointer;
-  position: relative;
-  vertical-align: middle;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
-.dos-program-check:checked {
+.dos-library-slot-btn:hover:not(:disabled) {
   border-color: var(--cyan);
-  background: rgba(0, 210, 255, 0.15);
+  color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.1);
 }
 
-.dos-program-check:checked::after {
-  content: '';
-  position: absolute;
-  top: 1px;
-  left: 4px;
-  width: 4px;
-  height: 7px;
-  border: solid var(--cyan);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.dos-library-slot-btn-loaded {
+  border-color: var(--cyan-20);
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--cyan);
 }
 
-.dos-program-check:disabled {
+.dos-library-slot-btn-loaded:hover:not(:disabled) {
+  border-color: var(--amber-20);
+  color: var(--amber);
+  background: rgba(255, 182, 39, 0.08);
+  box-shadow: 0 0 8px rgba(255, 182, 39, 0.1);
+}
+
+.dos-library-slot-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.dos-program-row-loaded {
-  background: rgba(0, 210, 255, 0.04) !important;
-}
-
-.dos-memory-bar {
-  margin-bottom: 0.5rem;
-}
-
-.dos-memory-count {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--cyan);
-}
-
-.dos-memory-full {
-  color: var(--amber);
-}
-
-/* Loaded Programs (under deck) */
-.dos-loaded-programs {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.dos-loaded-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.dos-loaded-pill {
-  font-size: 0.72rem;
-  font-family: var(--font-mono);
-  padding: 0.15rem 0.5rem;
-  border-radius: 2px;
-  border: 1px solid var(--border-dim);
-}
-
-.dos-loaded-verb {
-  color: var(--magenta);
-  background: rgba(255, 0, 128, 0.08);
-  border-color: rgba(255, 0, 128, 0.2);
-}
-
-.dos-loaded-subject {
-  color: var(--green);
-  background: rgba(57, 255, 20, 0.08);
-  border-color: rgba(57, 255, 20, 0.2);
+.dos-library-item-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 0.25rem;
+  padding-left: 0.1rem;
 }
 
 /* Download */

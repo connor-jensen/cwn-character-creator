@@ -14,6 +14,7 @@ import "./CharacterDossier.css";
 
 export default function CharacterDossier({ char }) {
   const [loadedPrograms, setLoadedPrograms] = useState(() => new Set());
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const bgObj = char.background && allBackgrounds.find((b) => b.name === char.background);
   const edgeObjs = char.edges.map((name) => allEdges.find((e) => e.name === name)).filter(Boolean);
 
@@ -337,9 +338,6 @@ export default function CharacterDossier({ char }) {
                   });
                 };
 
-                const loadedVerbs = verbs.filter((p) => loadedPrograms.has(p.name));
-                const loadedSubjects = subjects.filter((p) => loadedPrograms.has(p.name));
-
                 return (
             <section className="dos-section">
               <SectionHeader num="11" label="Hacking" />
@@ -368,27 +366,13 @@ export default function CharacterDossier({ char }) {
                   key={item.name}
                   item={item}
                   pills={[
-                    item.stats.memory && ["MEM", `${loadedCount}/${item.stats.memory}`],
+                    item.stats.memory && ["MEM", item.stats.memory],
                     item.stats.shielding && ["Shield", item.stats.shielding],
                     item.stats.cpu && ["CPU", item.stats.cpu],
                     item.stats.bonusAccess && ["Access", `+${item.stats.bonusAccess}`],
                   ].filter(Boolean)}
                 />
               ))}
-
-              {(loadedVerbs.length > 0 || loadedSubjects.length > 0) && (
-                <div className="dos-loaded-programs">
-                  <div className="dos-programs-label">Loaded into Deck</div>
-                  <div className="dos-loaded-grid">
-                    {loadedVerbs.map((p) => (
-                      <span key={p.name} className="dos-loaded-pill dos-loaded-verb">{p.name}</span>
-                    ))}
-                    {loadedSubjects.map((p) => (
-                      <span key={p.name} className="dos-loaded-pill dos-loaded-subject">{p.name}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {hackerCyberware.map((item) => (
                 <GearBlock
@@ -402,88 +386,76 @@ export default function CharacterDossier({ char }) {
                 />
               ))}
 
-              {char.programs?.length > 0 && (
+              {char.programs?.length > 0 && (() => {
+                const loadedVerbs = verbs.filter((p) => loadedPrograms.has(p.name));
+                const loadedSubjects = subjects.filter((p) => loadedPrograms.has(p.name));
+
+                return (
                 <div className="dos-programs">
-                  <div className="dos-programs-label">Program Library</div>
-                  <div className="dos-memory-bar">
-                    <span className={`dos-memory-count${memoryFull ? " dos-memory-full" : ""}`}>
-                      {loadedCount}/{deckMemory} memory
-                    </span>
+                  {/* ── Deck Memory: segmented bar ── */}
+                  <div className="dos-programs-header">
+                    <span className="dos-programs-label">Deck Memory</span>
+                    <div className="dos-mem-track">
+                      {Array.from({ length: deckMemory }, (_, i) => (
+                        <div key={i} className={`dos-mem-seg${i < loadedCount ? " dos-mem-seg-filled" : ""}`} />
+                      ))}
+                      <span className={`dos-mem-count${memoryFull ? " dos-mem-count-full" : ""}`}>
+                        {loadedCount}/{deckMemory}
+                      </span>
+                    </div>
                   </div>
 
-                  {verbs.length > 0 && (
+                  {/* ── Loaded Programs: always-visible reference tables ── */}
+                  {loadedVerbs.length > 0 && (
                     <>
-                      <div className="dos-programs-sublabel">Verbs</div>
-                      <table className="dos-program-table dos-program-table-verb">
+                      <div className="dos-loaded-sublabel dos-loaded-sublabel-verb">Loaded Verbs</div>
+                      <table className="dos-loaded-table dos-loaded-table-verb">
                         <thead>
                           <tr>
-                            <th className="dos-program-th-load"></th>
                             <th>Verb</th>
                             <th>Targets</th>
                             <th>Access</th>
                             <th>Mod</th>
-                            <th>Use</th>
+                            <th>Effect</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {verbs.map((p) => {
+                          {loadedVerbs.map((p) => {
                             const data = verbLookup[p.name];
-                            const isLoaded = loadedPrograms.has(p.name);
                             return (
-                              <tr key={p.name} className={isLoaded ? "dos-program-row-loaded" : ""}>
-                                <td className="dos-program-td-load">
-                                  <input
-                                    type="checkbox"
-                                    className="dos-program-check"
-                                    checked={isLoaded}
-                                    disabled={!isLoaded && memoryFull}
-                                    onChange={() => toggleLoaded(p.name)}
-                                  />
-                                </td>
-                                <td className="dos-program-name">{p.name}</td>
+                              <tr key={p.name}>
+                                <td className="dos-loaded-name">{p.name}</td>
                                 <td>{data?.targetsAllowed?.join("/") || "\u2014"}</td>
                                 <td>{data?.accessCost ?? "\u2014"}{data?.selfTerminating ? "*" : ""}</td>
-                                <td>{data?.skillCheckModifier != null ? (data.skillCheckModifier >= 0 ? `+${data.skillCheckModifier}` : data.skillCheckModifier) : "N/A"}</td>
-                                <td className="dos-program-use">{data?.use || "\u2014"}</td>
+                                <td>{data?.skillCheckModifier != null ? (data.skillCheckModifier >= 0 ? `+${data.skillCheckModifier}` : data.skillCheckModifier) : "\u2014"}</td>
+                                <td className="dos-loaded-use">{data?.use || "\u2014"}</td>
                               </tr>
                             );
                           })}
                         </tbody>
                       </table>
-                      <div className="dos-program-footnote">* Self-terminating</div>
                     </>
                   )}
 
-                  {subjects.length > 0 && (
+                  {loadedSubjects.length > 0 && (
                     <>
-                      <div className="dos-programs-sublabel">Subjects</div>
-                      <table className="dos-program-table dos-program-table-subject">
+                      <div className="dos-loaded-sublabel dos-loaded-sublabel-subject">Loaded Subjects</div>
+                      <table className="dos-loaded-table dos-loaded-table-subject">
                         <thead>
                           <tr>
-                            <th className="dos-program-th-load"></th>
                             <th>Subject</th>
                             <th>Type</th>
-                            <th>Use</th>
+                            <th>Effect</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {subjects.map((p) => {
+                          {loadedSubjects.map((p) => {
                             const data = subjectLookup[p.name];
-                            const isLoaded = loadedPrograms.has(p.name);
                             return (
-                              <tr key={p.name} className={isLoaded ? "dos-program-row-loaded" : ""}>
-                                <td className="dos-program-td-load">
-                                  <input
-                                    type="checkbox"
-                                    className="dos-program-check"
-                                    checked={isLoaded}
-                                    disabled={!isLoaded && memoryFull}
-                                    onChange={() => toggleLoaded(p.name)}
-                                  />
-                                </td>
-                                <td className="dos-program-name">{p.name}</td>
+                              <tr key={p.name}>
+                                <td className="dos-loaded-name">{p.name}</td>
                                 <td>{data?.type || "\u2014"}</td>
-                                <td className="dos-program-use">{data?.use || "\u2014"}</td>
+                                <td className="dos-loaded-use">{data?.use || "\u2014"}</td>
                               </tr>
                             );
                           })}
@@ -491,12 +463,96 @@ export default function CharacterDossier({ char }) {
                       </table>
                     </>
                   )}
+
+                  {loadedCount === 0 && (
+                    <div className="dos-loaded-empty">No programs loaded — open the library below to slot programs into deck memory.</div>
+                  )}
+
+                  {loadedVerbs.some((p) => verbLookup[p.name]?.selfTerminating) && (
+                    <div className="dos-loaded-footnote">* Self-terminating (frees memory after use)</div>
+                  )}
+
+                  {/* ── Program Library: collapsible, verbose ── */}
+                  <button
+                    className={`dos-library-toggle${libraryOpen ? " dos-library-toggle-open" : ""}`}
+                    onClick={() => setLibraryOpen((v) => !v)}
+                  >
+                    <span className="dos-library-toggle-icon">{libraryOpen ? "\u25BC" : "\u25B6"}</span>
+                    <span>Program Library</span>
+                    <span className="dos-library-toggle-count">{char.programs.length} programs</span>
+                  </button>
+
+                  {libraryOpen && (
+                    <div className="dos-library">
+                      {verbs.length > 0 && (
+                        <div className="dos-library-section">
+                          <div className="dos-library-divider dos-library-divider-verb">Verbs</div>
+                          {verbs.map((p) => {
+                            const data = verbLookup[p.name];
+                            const isLoaded = loadedPrograms.has(p.name);
+                            const disabled = !isLoaded && memoryFull;
+                            return (
+                              <div key={p.name} className={`dos-library-item${isLoaded ? " dos-library-item-loaded" : ""}`}>
+                                <div className="dos-library-item-top">
+                                  <span className="dos-library-item-name dos-library-item-name-verb">{p.name}</span>
+                                  <div className="dos-library-item-stats">
+                                    <span>{data?.targetsAllowed?.join(" / ")}</span>
+                                    <span>A:{data?.accessCost ?? "\u2014"}{data?.selfTerminating ? " ST" : ""}</span>
+                                    {data?.skillCheckModifier != null && (
+                                      <span>{data.skillCheckModifier >= 0 ? `+${data.skillCheckModifier}` : data.skillCheckModifier}</span>
+                                    )}
+                                  </div>
+                                  <button
+                                    className={`dos-library-slot-btn${isLoaded ? " dos-library-slot-btn-loaded" : ""}`}
+                                    disabled={disabled}
+                                    onClick={() => toggleLoaded(p.name)}
+                                  >
+                                    {isLoaded ? "Unload" : "Load"}
+                                  </button>
+                                </div>
+                                <div className="dos-library-item-desc">{data?.description || data?.use || "\u2014"}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {subjects.length > 0 && (
+                        <div className="dos-library-section">
+                          <div className="dos-library-divider dos-library-divider-subject">Subjects</div>
+                          {subjects.map((p) => {
+                            const data = subjectLookup[p.name];
+                            const isLoaded = loadedPrograms.has(p.name);
+                            const disabled = !isLoaded && memoryFull;
+                            return (
+                              <div key={p.name} className={`dos-library-item${isLoaded ? " dos-library-item-loaded" : ""}`}>
+                                <div className="dos-library-item-top">
+                                  <span className="dos-library-item-name dos-library-item-name-subject">{p.name}</span>
+                                  <div className="dos-library-item-stats">
+                                    <span>{data?.type || "\u2014"}</span>
+                                  </div>
+                                  <button
+                                    className={`dos-library-slot-btn${isLoaded ? " dos-library-slot-btn-loaded" : ""}`}
+                                    disabled={disabled}
+                                    onClick={() => toggleLoaded(p.name)}
+                                  >
+                                    {isLoaded ? "Unload" : "Load"}
+                                  </button>
+                                </div>
+                                <div className="dos-library-item-desc">{data?.description || data?.use || "\u2014"}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+                );
+              })()}
             </section>
                 );
           })()}
-          )}
 
           {vehicleDroneItems.length > 0 && (
             <section className="dos-section">
