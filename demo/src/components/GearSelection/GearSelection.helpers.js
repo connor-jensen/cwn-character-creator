@@ -32,6 +32,8 @@ export function getSpecialtyStatPills(item) {
   if (s.traumaTarget) pills.push(["Trauma Tgt", s.traumaTarget]);
   if (s.crew) pills.push(["Crew", s.crew]);
   if (s.fittings !== undefined) pills.push(["Fittings", s.fittings]);
+  // VR Crown
+  if (s.vrCrown) pills.push(["VR Crown", s.vrCrown]);
   // Tech / generic
   if (s.effect) pills.push(["Effect", s.effect]);
   if (s.enc) pills.push(["ENC", s.enc]);

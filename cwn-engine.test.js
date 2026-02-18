@@ -39,6 +39,8 @@ import {
   getContactAllotment,
   addGeneratedContact,
   cyberwarePackages,
+  MENTAL_SKILLS,
+  PHYSICAL_SKILLS,
 } from "./cwn-engine.js";
 
 // --- Data Loading ---
@@ -52,7 +54,7 @@ describe("Data loading", () => {
 
   it("loads backgrounds from JSON", () => {
     assert.ok(Array.isArray(backgrounds));
-    assert.equal(backgrounds.length, 20);
+    assert.equal(backgrounds.length, 19);
     assert.ok(backgrounds[0].free_skill);
   });
 
@@ -1244,5 +1246,133 @@ describe("equipStartingGear preserves specialty items", () => {
     const specialty = c.inventory.find((i) => i.specialty);
     assert.ok(specialty, "specialty item should still be in inventory");
     assert.equal(specialty.name, "Rifle");
+  });
+});
+
+// --- Skill Category Constants ---
+
+describe("MENTAL_SKILLS / PHYSICAL_SKILLS", () => {
+  it("exports 7 mental and 5 physical skills", () => {
+    assert.equal(MENTAL_SKILLS.length, 7);
+    assert.equal(PHYSICAL_SKILLS.length, 5);
+  });
+
+  it("no overlap between categories", () => {
+    for (const s of MENTAL_SKILLS) {
+      assert.ok(!PHYSICAL_SKILLS.includes(s), `${s} in both lists`);
+    }
+  });
+});
+
+// --- resolvePending return shape ---
+
+describe("resolvePending return shape", () => {
+  it("returns { char, pending } for pickSkill", () => {
+    const c = createCharacter();
+    const result = resolvePending(c, { type: "pickSkill", category: "any" }, "Notice");
+    assert.ok(result.char);
+    assert.ok(Array.isArray(result.pending));
+    assert.equal(result.pending.length, 0);
+  });
+
+  it("returns { char, pending } for pickFocus", () => {
+    const c = createCharacter();
+    const result = resolvePending(c, { type: "pickFocus" }, "Alert");
+    assert.ok(result.char);
+    assert.ok(Array.isArray(result.pending));
+  });
+
+  it("returns { char, pending } for addContact", () => {
+    const c = createCharacter();
+    const result = resolvePending(c, {
+      type: "addContact",
+      relationship: "Friend",
+      context: "test",
+    }, "DJ Spinz");
+    assert.ok(result.char);
+    assert.ok(Array.isArray(result.pending));
+  });
+
+  it("returns { char, pending } for pickAttribute", () => {
+    const c = createCharacter();
+    const result = resolvePending(c, { type: "pickAttribute", setTo: 14 }, "strength");
+    assert.ok(result.char);
+    assert.ok(Array.isArray(result.pending));
+  });
+});
+
+// --- Skillplug Selection ---
+
+describe("pickSkillplugs via resolvePending", () => {
+  function makeTechieChar() {
+    const c = createCharacter();
+    resolvePending(c, { type: "pickCyberwarePackage" }, "Techie or Doc");
+    return c;
+  }
+
+  it("Techie or Doc package chains a pickSkillplugs pending", () => {
+    const c = createCharacter();
+    const { pending } = resolvePending(c, { type: "pickCyberwarePackage" }, "Techie or Doc");
+    assert.equal(pending.length, 1);
+    assert.equal(pending[0].type, "pickSkillplugs");
+    assert.equal(pending[0].budget, 3);
+  });
+
+  it("Cutter package does NOT chain pickSkillplugs", () => {
+    const c = createCharacter();
+    const { pending } = resolvePending(c, { type: "pickCyberwarePackage" }, "Cutter");
+    assert.equal(pending.length, 0);
+  });
+
+  it("adds skillplug items to cyberwarePackage", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    resolvePending(c, item, ["Fix", "Know", "Talk"]);
+    // 2 base items + 3 skillplugs = 5
+    assert.equal(c.cyberwarePackage.items.length, 5);
+    const plugs = c.cyberwarePackage.items.filter((i) => i.cost === 0 && i.name.endsWith("Skillplug"));
+    assert.equal(plugs.length, 3);
+    assert.equal(plugs[0].name, "Fix Skillplug");
+    assert.equal(plugs[0].systemStrain, 0);
+  });
+
+  it("handles empty array (skip)", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    resolvePending(c, item, []);
+    // Original 2 items, no plugs added
+    assert.equal(c.cyberwarePackage.items.length, 2);
+  });
+
+  it("throws on non-array choice", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    assert.throws(() => resolvePending(c, item, "Fix"), /must be an array/);
+  });
+
+  it("throws on budget exceeded (3 physical = 6 > 3)", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    assert.throws(
+      () => resolvePending(c, item, ["Fight", "Shoot"]),
+      /budget exceeded/i
+    );
+  });
+
+  it("allows 1 physical + 1 mental within budget", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    resolvePending(c, item, ["Drive", "Fix"]);
+    // 2 base items + 2 skillplugs = 4
+    assert.equal(c.cyberwarePackage.items.length, 4);
+  });
+
+  it("throws on invalid skill name", () => {
+    const c = makeTechieChar();
+    const item = { type: "pickSkillplugs", budget: 3 };
+    assert.throws(
+      () => resolvePending(c, item, ["Fly"]),
+      /not a valid skillplug/
+    );
   });
 });

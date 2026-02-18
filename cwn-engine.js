@@ -147,6 +147,10 @@ export function addBonusSkill(char, skillName) {
 
 const COMBAT_SKILLS = ["Shoot", "Fight"];
 
+export const MENTAL_SKILLS = ["Connect", "Fix", "Heal", "Know", "Notice", "Program", "Talk"];
+export const PHYSICAL_SKILLS = ["Drive", "Exert", "Fight", "Shoot", "Sneak"];
+const SKILLPLUG_BUDGET = 3;
+
 export function applyEdge(char, edgeName) {
   const edge = edges.find((e) => e.name === edgeName);
   if (!edge) throw new Error(`Unknown edge: ${edgeName}`);
@@ -219,6 +223,8 @@ export function applyEdge(char, edgeName) {
 }
 
 export function resolvePending(char, pendingItem, choice) {
+  const pending = [];
+
   switch (pendingItem.type) {
     case "pickSkill": {
       if (pendingItem.category === "combat" && !COMBAT_SKILLS.includes(choice)) {
@@ -281,12 +287,46 @@ export function resolvePending(char, pendingItem, choice) {
         monthlyMaintenance: pkg.monthlyMaintenance,
         items: pkg.items.map((item) => ({ ...item })),
       };
+      if (choice === "Techie or Doc") {
+        pending.push({
+          type: "pickSkillplugs",
+          budget: SKILLPLUG_BUDGET,
+          reason: "Choose Skillplugs",
+        });
+      }
+      break;
+    }
+    case "pickSkillplugs": {
+      if (!Array.isArray(choice)) {
+        throw new Error("Skillplug selection must be an array of skill names.");
+      }
+      const allValid = [...MENTAL_SKILLS, ...PHYSICAL_SKILLS];
+      let cost = 0;
+      for (const skill of choice) {
+        if (!allValid.includes(skill)) {
+          throw new Error(`"${skill}" is not a valid skillplug skill.`);
+        }
+        cost += PHYSICAL_SKILLS.includes(skill) ? 2 : 1;
+      }
+      if (cost > pendingItem.budget) {
+        throw new Error(
+          `Skillplug budget exceeded: ${cost} > ${pendingItem.budget}.`
+        );
+      }
+      for (const skill of choice) {
+        char.cyberwarePackage.items.push({
+          name: `${skill} Skillplug`,
+          description: `Level-1 ${skill} skillplug`,
+          cost: 0,
+          systemStrain: 0,
+        });
+      }
       break;
     }
     default:
       throw new Error(`Unknown pending type: ${pendingItem.type}`);
   }
-  return char;
+  return { char, pending };
 }
 
 // Keep backward-compatible alias
@@ -656,9 +696,9 @@ export const SPECIALTY_ITEMS = [
     stats: { strain: 0.25, concealment: "Touch", effect: "Direct neural link to decks/hardware" },
   },
   {
-    name: "Scrap Cyberdeck", category: "hacking", specialty: true,
-    description: "A basic, custom-built hacking rig. Necessary for anyone using Verbs and Subjects in cyberspace.",
-    stats: { memory: 8, shielding: 5, cpu: 2, bonusAccess: 1, enc: 1 },
+    name: "Scrap Cyberdeck + VR Crown", category: "hacking", specialty: true,
+    description: "A basic hacking rig plus a VR Crown for wireless net access. The crown lets you hack without a Cranial Jack, but at a -1 penalty to all hacking checks.",
+    stats: { memory: 8, shielding: 5, cpu: 2, bonusAccess: 1, enc: 1, vrCrown: "-1 hacking without Cranial Jack" },
   },
   {
     name: "Goggles, IR", category: "tech", specialty: true,

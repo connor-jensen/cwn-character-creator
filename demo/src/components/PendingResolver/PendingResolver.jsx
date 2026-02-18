@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ALL_SKILLS, COMBAT_SKILLS, ATTR_NAMES } from "../../constants.js";
 import {
   offerFoci,
@@ -5,7 +6,52 @@ import {
 } from "../../../../cwn-engine.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 import ChoiceGrid from "../ChoiceGrid";
+import ConfirmButton from "../ConfirmButton";
+import SkillplugPicker from "./SkillplugPicker.jsx";
 import "./PendingResolver.css";
+
+function CyberwarePackagePicker({ onResolve }) {
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <div>
+      <p className="step-desc">Choose a cyberware package:</p>
+      <div className="cyber-package-grid">
+        {cyberwarePackages.map((pkg) => (
+          <button
+            key={pkg.name}
+            className={`cyber-package-card${selected === pkg.name ? " cyber-package-selected" : ""}`}
+            onClick={() => setSelected(pkg.name)}
+          >
+            <h3>{pkg.name}</h3>
+            <p className="cyber-package-desc">{pkg.description}</p>
+            <div className="cyber-package-items">
+              {pkg.items.map((ci) => (
+                <div key={ci.name} className="cyber-item">
+                  <span className="cyber-item-name">{ci.name}</span>
+                  <span className="cyber-item-desc">{ci.description}</span>
+                  <span className="cyber-item-stats">
+                    ${(ci.cost / 1000).toFixed(0)}K &middot; SS {ci.systemStrain}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="cyber-package-totals">
+              <span>Total: ${(pkg.totalCost / 1000).toFixed(0)}K</span>
+              <span>SS: {pkg.totalSystemStrain}</span>
+              <span>Maint: ${pkg.monthlyMaintenance.toLocaleString()}/mo</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      <ConfirmButton
+        isVisible={!!selected}
+        label={`Install ${selected}`}
+        onClick={() => onResolve(selected)}
+      />
+    </div>
+  );
+}
 
 export default function PendingResolver({ item, char, onResolve }) {
   const skills = item.options
@@ -64,37 +110,13 @@ export default function PendingResolver({ item, char, onResolve }) {
   }
 
   if (item.type === "pickCyberwarePackage") {
+    return <CyberwarePackagePicker onResolve={onResolve} />;
+  }
+
+  if (item.type === "pickSkillplugs") {
     return (
       <div>
-        <p className="step-desc">Choose a cyberware package:</p>
-        <div className="cyber-package-grid">
-          {cyberwarePackages.map((pkg) => (
-            <button
-              key={pkg.name}
-              className="cyber-package-card"
-              onClick={() => onResolve(pkg.name)}
-            >
-              <h3>{pkg.name}</h3>
-              <p className="cyber-package-desc">{pkg.description}</p>
-              <div className="cyber-package-items">
-                {pkg.items.map((item) => (
-                  <div key={item.name} className="cyber-item">
-                    <span className="cyber-item-name">{item.name}</span>
-                    <span className="cyber-item-desc">{item.description}</span>
-                    <span className="cyber-item-stats">
-                      ${(item.cost / 1000).toFixed(0)}K &middot; SS {item.systemStrain}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="cyber-package-totals">
-                <span>Total: ${(pkg.totalCost / 1000).toFixed(0)}K</span>
-                <span>SS: {pkg.totalSystemStrain}</span>
-                <span>Maint: ${pkg.monthlyMaintenance.toLocaleString()}/mo</span>
-              </div>
-            </button>
-          ))}
-        </div>
+        <SkillplugPicker budget={item.budget} onResolve={onResolve} />
       </div>
     );
   }

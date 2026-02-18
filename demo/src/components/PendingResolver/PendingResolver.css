@@ -200,6 +200,16 @@
   transform: translateY(0);
 }
 
+.cyber-package-selected {
+  border-color: var(--cyan-50);
+  box-shadow: 0 0 20px var(--cyan-10), 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-package-selected::after {
+  content: 'SELECTED';
+  transform: translateY(0);
+}
+
 .cyber-package-card h3 {
   font-size: 1rem;
   color: var(--text-bright);
@@ -258,6 +268,84 @@
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--amber);
+}
+
+/* ===== Skillplug Picker ===== */
+
+.skillplug-cost-legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.skillplug-mental-label {
+  color: var(--cyan);
+}
+
+.skillplug-physical-label {
+  color: var(--amber);
+}
+
+.skillplug-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.skillplug-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-width: 5.5rem;
+}
+
+.skillplug-btn .skillplug-cost {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.skillplug-mental:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.1);
+}
+
+.skillplug-physical:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 10px rgba(255, 182, 39, 0.1);
+}
+
+.skillplug-selected.skillplug-mental {
+  border-color: var(--cyan);
+  background: rgba(0, 210, 255, 0.1);
+  color: var(--cyan);
+}
+
+.skillplug-selected.skillplug-physical {
+  border-color: var(--amber);
+  background: rgba(255, 182, 39, 0.1);
+  color: var(--amber);
+}
+
+.skillplug-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.skillplug-actions {
+  margin-top: 0.5rem;
 }
 
 /* ===== Responsive ===== */

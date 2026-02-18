@@ -85,9 +85,9 @@ export default function useCharacterCreation() {
   const handleResolvePending = (choice) => {
     const next = deepClone(char);
     const item = pendingQueue[0];
-    resolvePending(next, item, choice);
+    const { pending: newPending } = resolvePending(next, item, choice);
     setChar(next);
-    const remaining = pendingQueue.slice(1);
+    const remaining = [...newPending, ...pendingQueue.slice(1)];
     setPendingQueue(remaining);
     if (remaining.length === 0) {
       advanceTo(step + 1, next);

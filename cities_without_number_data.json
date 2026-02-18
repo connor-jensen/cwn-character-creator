@@ -103,7 +103,7 @@
     },
     {
       "name": "Techie or Doc",
-      "description": "An Omnihand multi-tool for tech work. Skillplugs can be bought with Wired funds, one at a time.",
+      "description": "An Omnihand multi-tool for tech work. Includes 3 points of skillplugs (mental 1pt, physical 2pt).",
       "totalCost": 35000,
       "totalSystemStrain": 0.75,
       "monthlyMaintenance": 1750,
