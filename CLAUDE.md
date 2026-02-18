@@ -67,8 +67,9 @@ This repo uses git worktrees for parallel development across multiple Claude Cod
 - **Push your branch** when work is ready for merge: `git push -u origin <branch>`
 - **Merges to main use squash merge** — the main session handles this via `git merge --squash <branch>`
 - **After merging**, reset the workspace branch so it's ready for the next feature: `git push origin main:<branch> --force`
-- **Dev server ports** — each worktree runs on its own port to avoid conflicts:
-  - main: `npm run dev -- --port 5100`
-  - workspace-1: `npm run dev -- --port 5101`
-  - workspace-2: `npm run dev -- --port 5102`
-  - workspace-3: `npm run dev -- --port 5103`
+- **Dev server ports** — `vite.config.js` auto-detects the worktree and assigns the port (`strictPort: true`). Just run `npm run dev`:
+  - main (cwn-character-creator): 5100
+  - workspace-1: 5101
+  - workspace-2: 5102
+  - workspace-3: 5103
+- **Port cleanup** — a `SessionStart` hook on `/clear` automatically kills the dev server for the worktree's port
