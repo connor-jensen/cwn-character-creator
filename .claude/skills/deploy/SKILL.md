@@ -15,8 +15,8 @@ The user has invoked /deploy, which authorizes you to commit, push, and deploy t
 
 3. **Deploy** to `gh-pages`:
    - Switch to the `gh-pages` branch
-   - Remove old assets (index.html, assets/)
-   - Copy the new build output from `demo/dist/` to the repo root
+   - Remove all deployed files (index.html, assets/, audio/, vite.svg, and any other build artifacts) but keep the `demo/` directory
+   - Copy **all** contents of `demo/dist/` to the repo root (this includes assets/, audio/, index.html, etc.)
    - Commit with message "Deploy to GitHub Pages"
    - Push to `origin gh-pages`
    - Switch back to `main`
