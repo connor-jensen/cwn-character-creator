@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --test:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git worktree add:*)",
+      "Bash(git worktree:*)",
+      "Bash(git merge:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git -C /Users/connerjensen/Code/Personal/CitiesWithoutNumber/workspace-1 status)",
+      "Bash(git -C /Users/connerjensen/Code/Personal/CitiesWithoutNumber/cwn-character-creator log --oneline main..workspace-1)",
+      "Bash(git -C /Users/connerjensen/Code/Personal/CitiesWithoutNumber/cwn-character-creator worktree list)",
+      "Bash(git -C /Users/connerjensen/Code/Personal/CitiesWithoutNumber/cwn-workspace-1 log --oneline main..workspace-1)"
+    ]
+  }
+}
