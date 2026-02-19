@@ -6,6 +6,7 @@ import {
   foci as allFoci,
 } from "../../../../cwn-engine.js";
 import useCharacterCreation from "./useCharacterCreation.js";
+import useBackgroundMusic from "../../hooks/useBackgroundMusic.js";
 import Header from "../Header";
 import ProgressBar from "../ProgressBar";
 import Sidebar from "../Sidebar";
@@ -55,10 +56,12 @@ export default function App() {
     handleDevReset,
   } = useCharacterCreation();
 
+  const { muted, toggleMute } = useBackgroundMusic();
+
   if (view === "manager") {
     return (
       <div className="app">
-        <Header step={step} devMode={devMode} view="manager" onNavigate={handleNavigate} />
+        <Header step={step} devMode={devMode} view="manager" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
         <OperatorManager onNavigate={handleNavigate} />
       </div>
     );
@@ -67,7 +70,7 @@ export default function App() {
   if (pendingQueue.length > 0 && !isViewingLockedStep) {
     return (
       <div className="app">
-        <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} />
+        <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
         <ProgressBar step={step} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
         <div className="layout">
           <div className="main">
@@ -101,7 +104,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} />
+      <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
       <ProgressBar step={step} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
 
       <div className="layout">

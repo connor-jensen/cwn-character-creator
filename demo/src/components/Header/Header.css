@@ -82,6 +82,37 @@
   text-shadow: 0 0 10px var(--cyan-50);
 }
 
+/* ===== Mute Button ===== */
+
+.header-mute-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--cyan-20);
+  border-radius: 2px;
+  color: var(--cyan);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-mute-btn:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan-20);
+}
+
+.header-mute-btn.muted {
+  color: var(--text-muted);
+  border-color: var(--border-dim);
+}
+
+.header-mute-btn.muted:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-50);
+}
 
 /* ===== Responsive ===== */
 
