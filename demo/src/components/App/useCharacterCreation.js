@@ -23,9 +23,8 @@ import { STEPS } from "../../constants.js";
 import { deepClone } from "../../helpers/deep-clone.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 
-export default function useCharacterCreation() {
+export default function useCharacterCreation({ step = 0, navigateToStep }) {
   const [char, setChar] = useState(createCharacter);
-  const [step, setStep] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [rolling, setRolling] = useState(false);
   const [offers, setOffers] = useState(null);
@@ -45,6 +44,12 @@ export default function useCharacterCreation() {
       return next;
     });
   }, []);
+
+  // Keep a stable ref to navigateToStep so callbacks don't go stale
+  const navigateRef = useRef(navigateToStep);
+  useEffect(() => {
+    navigateRef.current = navigateToStep;
+  }, [navigateToStep]);
 
   const currentStep = STEPS[step];
   const isViewingLockedStep = step < maxStepReached;
@@ -75,24 +80,24 @@ export default function useCharacterCreation() {
       const allotment = getContactAllotment(currentChar.attributes.charisma.mod);
       if (allotment.length === 0) {
         setOffers(null);
-        setStep(nextIdx + 1);
         setMaxStepReached((prev) => Math.max(prev, nextIdx + 1));
+        navigateRef.current(STEPS[nextIdx + 1]);
         return;
       }
       setGeneratedContacts(allotment.map((rel) => generateContact(rel)));
     }
 
-    setStep(nextIdx);
     setMaxStepReached((prev) => Math.max(prev, nextIdx));
+    navigateRef.current(STEPS[nextIdx]);
   }, []);
 
-  const handleStepClick = (i) => {
+  const handleStepClick = useCallback((i) => {
     // Can't skip ahead past the frontier
     if (i > maxStepReached) return;
 
     // Navigating to a locked (completed) step — just view it, preserve working state
     if (i < maxStepReached) {
-      setStep(i);
+      navigateRef.current(STEPS[i]);
       return;
     }
 
@@ -114,8 +119,8 @@ export default function useCharacterCreation() {
     } else {
       setGeneratedContacts(null);
     }
-    setStep(i);
-  };
+    navigateRef.current(STEPS[i]);
+  }, [maxStepReached, char]);
 
   const handleResolvePending = (choice) => {
     const next = deepClone(char);
@@ -226,7 +231,6 @@ export default function useCharacterCreation() {
 
   const handleDevReset = useCallback(() => {
     setChar(createCharacter());
-    setStep(0);
     setMaxStepReached(0);
     setRolling(false);
     setOffers(null);
@@ -237,6 +241,7 @@ export default function useCharacterCreation() {
     setGeneratedContacts(null);
     setRollMode("standard");
     setBonusSkillPick(null);
+    navigateRef.current(STEPS[0]);
   }, []);
 
   const availableSkills = getAvailableSkills(char);

@@ -1,13 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 // eslint-disable-next-line no-unused-vars -- motion is used as JSX namespace (motion.div)
 import { motion, AnimatePresence } from "motion/react";
+import { useSearch, useNavigate } from "@tanstack/react-router";
 import {
   edges as allEdges,
   foci as allFoci,
 } from "../../../../cwn-engine.js";
-import useCharacterCreation from "./useCharacterCreation.js";
-import useBackgroundMusic from "../../hooks/useBackgroundMusic.js";
-import Header from "../Header";
+import { useCharCreation } from "../../context/CharacterCreationContext.jsx";
 import ProgressBar from "../ProgressBar";
 import Sidebar from "../Sidebar";
 import PendingResolver from "../PendingResolver";
@@ -16,31 +15,25 @@ import DiceRollSequence from "../DiceRollSequence";
 import BackgroundSequence from "../BackgroundSequence";
 import SelectionSequence from "../SelectionSequence";
 import ContactSequence from "../ContactSequence";
-import OperatorManager from "../OperatorManager";
 import StepReview from "../StepReview/StepReview.jsx";
-import { ALL_SKILLS } from "../../constants.js";
-import "./App.css";
+import { STEPS, ALL_SKILLS } from "../../constants.js";
 
-export default function App() {
-  const [view, setView] = useState("creator");
-
-  const handleNavigate = useCallback((v) => setView(v), []);
+export default function CreatorView() {
+  const { step: stepName } = useSearch({ from: "/create" });
+  const navigate = useNavigate();
 
   const {
     char, setChar,
-    step, maxStepReached,
+    maxStepReached,
     rolling, rollMode, setRollMode,
-    devMode, toggleDevMode,
     offers,
     pendingQueue,
     selectedWeapon, setSelectedWeapon,
     selectedArmor, setSelectedArmor,
     selectedSpecialty, setSelectedSpecialty,
     generatedContacts,
-    currentStep,
     availableSkills,
     isFinalized,
-    isViewingLockedStep,
     bonusSkillPick,
     handleStepClick,
     handleResolvePending,
@@ -53,25 +46,45 @@ export default function App() {
     handleEquipGear,
     handleContactsComplete,
     handleFinish,
-    handleDevReset,
-  } = useCharacterCreation();
+    registerNavigate,
+    setStep,
+  } = useCharCreation();
 
-  const { muted, toggleMute } = useBackgroundMusic();
+  // Derive step index from URL
+  const requestedIndex = STEPS.indexOf(stepName);
+  const stepIndex = requestedIndex === -1 ? 0 : Math.min(requestedIndex, maxStepReached);
 
-  if (view === "manager") {
-    return (
-      <div className="app">
-        <Header step={step} devMode={devMode} view="manager" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
-        <OperatorManager onNavigate={handleNavigate} />
-      </div>
-    );
-  }
+  // Sync step index into the context so useCharacterCreation sees it
+  useEffect(() => {
+    setStep(stepIndex);
+  }, [stepIndex, setStep]);
+
+  // Register the router-based navigateToStep callback
+  const navigateToStep = useCallback(
+    (name) => navigate({ to: "/create", search: { step: name } }),
+    [navigate],
+  );
+  useEffect(() => {
+    registerNavigate(navigateToStep);
+  }, [registerNavigate, navigateToStep]);
+
+  // Redirect if URL step is beyond the frontier
+  useEffect(() => {
+    if (requestedIndex !== -1 && requestedIndex > maxStepReached) {
+      navigate({ to: "/create", search: { step: STEPS[maxStepReached] }, replace: true });
+    }
+    if (requestedIndex === -1) {
+      navigate({ to: "/create", search: { step: STEPS[0] }, replace: true });
+    }
+  }, [requestedIndex, maxStepReached, navigate]);
+
+  const currentStep = STEPS[stepIndex];
+  const isViewingLockedStep = stepIndex < maxStepReached;
 
   if (pendingQueue.length > 0 && !isViewingLockedStep) {
     return (
-      <div className="app">
-        <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
-        <ProgressBar step={step} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
+      <>
+        <ProgressBar step={stepIndex} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
         <div className="layout">
           <div className="main">
             <div className="pending-panel">
@@ -88,24 +101,15 @@ export default function App() {
           </div>
           <Sidebar char={char} />
         </div>
-        {devMode && (
-          <div className="dev-overlay">
-            <div className="dev-toolbar">
-              <span className="dev-toolbar-label">DEV MODE</span>
-              <button className="dev-reset-btn" onClick={handleDevReset}>Reset</button>
-            </div>
-          </div>
-        )}
-      </div>
+      </>
     );
   }
 
   const handleReturnToCurrent = () => handleStepClick(maxStepReached);
 
   return (
-    <div className="app">
-      <Header step={step} devMode={devMode} view="creator" onNavigate={handleNavigate} muted={muted} onToggleMute={toggleMute} />
-      <ProgressBar step={step} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
+    <>
+      <ProgressBar step={stepIndex} maxStepReached={maxStepReached} onStepClick={handleStepClick} />
 
       <div className="layout">
         <AnimatePresence mode="popLayout">
@@ -321,15 +325,6 @@ export default function App() {
 
         <Sidebar char={char} isFullWidth={isFinalized} />
       </div>
-
-      {devMode && (
-        <div className="dev-overlay">
-          <div className="dev-toolbar">
-            <span className="dev-toolbar-label">DEV MODE</span>
-            <button className="dev-reset-btn" onClick={handleDevReset}>Reset</button>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
