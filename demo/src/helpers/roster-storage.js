@@ -29,6 +29,10 @@ export function saveCharacter(char) {
   return record;
 }
 
+export function getCharacter(id) {
+  return loadRoster().find((r) => r.id === id) || null;
+}
+
 export function deleteCharacter(id) {
   const roster = loadRoster().filter((r) => r.id !== id);
   persistRoster(roster);

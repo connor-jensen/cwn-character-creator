@@ -85,6 +85,10 @@
   min-width: 0;
 }
 
+.om-card-main-clickable {
+  cursor: pointer;
+}
+
 .om-card-identity {
   display: flex;
   flex-direction: column;

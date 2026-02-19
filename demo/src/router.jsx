@@ -9,6 +9,7 @@ import { STEPS } from "./constants.js";
 import RootLayout from "./components/RootLayout/RootLayout.jsx";
 import CreatorView from "./components/CreatorView/CreatorView.jsx";
 import RosterView from "./components/RosterView/RosterView.jsx";
+import DossierView from "./components/DossierView/DossierView.jsx";
 
 const hashHistory = createHashHistory();
 
@@ -39,6 +40,12 @@ const rosterRoute = createRoute({
   component: RosterView,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, createRoute_, rosterRoute]);
+const dossierRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/roster/$operatorId",
+  component: DossierView,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, createRoute_, rosterRoute, dossierRoute]);
 
 export const router = createRouter({ routeTree, history: hashHistory });

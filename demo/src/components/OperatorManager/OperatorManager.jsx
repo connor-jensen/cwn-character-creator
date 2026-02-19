@@ -27,7 +27,7 @@ function Toast({ message, type, onDone }) {
   );
 }
 
-function OperatorCard({ record, onDelete, onDownload }) {
+function OperatorCard({ record, onSelect, onDelete, onDownload }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const timerRef = useRef(null);
 
@@ -54,7 +54,7 @@ function OperatorCard({ record, onDelete, onDownload }) {
 
   return (
     <div className="om-card">
-      <div className="om-card-main">
+      <div className="om-card-main om-card-main-clickable" onClick={() => onSelect(record.id)}>
         <div className="om-card-identity">
           <span className="om-card-name">{char.name}</span>
           <div className="om-card-tags">
@@ -90,7 +90,7 @@ function OperatorCard({ record, onDelete, onDownload }) {
   );
 }
 
-export default function OperatorManager({ onNavigate }) {
+export default function OperatorManager({ onNavigate, onSelect }) {
   const [roster, setRoster] = useState(() => loadRoster());
   const [toasts, setToasts] = useState([]);
   const fileInputRef = useRef(null);
@@ -180,6 +180,7 @@ export default function OperatorManager({ onNavigate }) {
             <OperatorCard
               key={record.id}
               record={record}
+              onSelect={onSelect}
               onDelete={handleDelete}
               onDownload={handleDownload}
             />

@@ -10,5 +10,10 @@ export default function RosterView() {
     [navigate],
   );
 
-  return <OperatorManager onNavigate={handleNavigate} />;
+  const handleSelect = useCallback(
+    (id) => navigate({ to: "/roster/$operatorId", params: { operatorId: id } }),
+    [navigate],
+  );
+
+  return <OperatorManager onNavigate={handleNavigate} onSelect={handleSelect} />;
 }

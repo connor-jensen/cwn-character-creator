@@ -13,7 +13,7 @@ import DossierContact from "./DossierContact.jsx";
 import GearBlock from "./GearBlock.jsx";
 import "./CharacterDossier.css";
 
-export default function CharacterDossier({ char }) {
+export default function CharacterDossier({ char, fromRoster }) {
   const [loadedPrograms, setLoadedPrograms] = useState(() => new Set());
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
@@ -614,13 +614,15 @@ export default function CharacterDossier({ char }) {
         <button className="btn-action" onClick={handleDownload}>
           <span className="btn-prompt">&gt;_</span> Download JSON
         </button>
-        <button
-          className={`btn-action${saveStatus === "saved" ? " btn-action-success" : ""}`}
-          onClick={handleSaveToRoster}
-        >
-          <span className="btn-prompt">&gt;_</span>
-          {saveStatus === "saved" ? "Saved!" : "Save to Roster"}
-        </button>
+        {!fromRoster && (
+          <button
+            className={`btn-action${saveStatus === "saved" ? " btn-action-success" : ""}`}
+            onClick={handleSaveToRoster}
+          >
+            <span className="btn-prompt">&gt;_</span>
+            {saveStatus === "saved" ? "Saved!" : "Save to Roster"}
+          </button>
+        )}
       </div>
     </div>
   );
