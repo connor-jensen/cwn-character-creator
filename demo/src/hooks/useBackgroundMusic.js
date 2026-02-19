@@ -8,7 +8,7 @@ const TRACKS = [
 const FADE_DURATION = 10; // seconds
 const FADE_INTERVAL = 50; // ms between volume steps
 
-export default function useBackgroundMusic() {
+export default function useBackgroundMusic({ autoStart = true } = {}) {
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem("cwn-music-muted") === "true"; }
     catch { return false; }
@@ -81,7 +81,7 @@ export default function useBackgroundMusic() {
     } else {
       audio.addEventListener("canplay", onCanPlay, { once: true });
     }
-  }, [cleanup]);
+  }, [cleanup]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const beginFade = useCallback((audio, remainingSec, idx) => {
     clearInterval(fadeTimer.current);
@@ -109,8 +109,16 @@ export default function useBackgroundMusic() {
     }, FADE_INTERVAL);
   }, [playTrack]);
 
+  // Manually start music (called by intro sequence)
+  const startMusic = useCallback(() => {
+    if (started.current) return;
+    started.current = true;
+    playTrack(0);
+  }, [playTrack]);
+
   // Bootstrap: try autoplay, fall back to first interaction
   useEffect(() => {
+    if (!autoStart) return;
     if (started.current) return;
 
     const boot = () => {
@@ -157,7 +165,7 @@ export default function useBackgroundMusic() {
       document.removeEventListener("click", boot);
       document.removeEventListener("keydown", boot);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup on unmount
   useEffect(() => {
@@ -169,5 +177,5 @@ export default function useBackgroundMusic() {
 
   const toggleMute = useCallback(() => setMuted((m) => !m), []);
 
-  return { muted, toggleMute };
+  return { muted, toggleMute, startMusic };
 }

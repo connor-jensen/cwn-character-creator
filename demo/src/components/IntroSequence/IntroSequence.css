@@ -1,0 +1,368 @@
+/* ===== Intro Overlay ===== */
+
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.5) 100%),
+    var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 1.8s ease;
+}
+
+.intro-overlay.is-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Outrun grid on intro */
+.intro-overlay::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 250vw;
+  height: 65vh;
+  transform: translateX(-50%) perspective(350px) rotateX(68deg);
+  transform-origin: center top;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 79px,
+      rgba(0, 229, 255, 0.07) 79px,
+      rgba(0, 229, 255, 0.07) 80px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255, 42, 109, 0.09) 39px,
+      rgba(255, 42, 109, 0.09) 40px
+    );
+  background-size: 80px 40px;
+  animation: gridScroll 2s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 5%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.3) 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 5%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.3) 80%, transparent 100%);
+}
+
+/* Scanline texture on intro */
+.intro-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Flash & Sweep ── */
+
+.intro-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  z-index: 20;
+  animation: introFlash 0.3s ease-out forwards;
+}
+
+@keyframes introFlash {
+  0%   { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.intro-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 15;
+  background: var(--cyan);
+  box-shadow:
+    0 0 20px 6px var(--cyan-50),
+    0 0 60px 15px var(--cyan-20);
+  animation: sweepDown 1.6s ease-in-out forwards;
+}
+
+@keyframes sweepDown {
+  0%   { transform: translateY(-4px); opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ── Pre-activation (boot + ready) ── */
+
+.intro-pre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+  z-index: 2;
+  transition: gap 0.5s ease;
+}
+
+.intro-pre.is-ready {
+  gap: 2.5rem;
+}
+
+/* ── Terminal ── */
+
+.intro-terminal {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--cyan);
+  max-width: 440px;
+  width: 100%;
+  padding: 1.5rem 2rem;
+  border: 1px solid var(--cyan-10);
+  background: rgba(0, 229, 255, 0.02);
+  position: relative;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.intro-pre.is-ready .intro-terminal {
+  opacity: 0.35;
+  transform: scale(0.95) translateY(-10px);
+}
+
+.intro-terminal::before {
+  content: "CWN://TERMINAL";
+  position: absolute;
+  top: -0.55rem;
+  left: 1rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan-50);
+  background: #000;
+  padding: 0 0.4rem;
+}
+
+.intro-ln {
+  margin-bottom: 0.35rem;
+  white-space: pre;
+  animation: lnIn 0.08s ease forwards;
+}
+
+.intro-ln.success { color: var(--green); }
+.intro-ln.ready   { color: var(--amber); font-weight: 700; }
+
+@keyframes lnIn {
+  from { opacity: 0; transform: translateX(4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Blinking cursor */
+.intro-cursor {
+  color: var(--cyan);
+  animation: cursorBlink 0.53s step-end infinite;
+  font-size: 0.8rem;
+}
+
+@keyframes cursorBlink {
+  0%, 49%  { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ── Call to Action ── */
+
+.intro-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  animation: ctaIn 0.5s ease forwards;
+}
+
+@keyframes ctaIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.intro-btn {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--cyan);
+  background: transparent;
+  border: 1px solid var(--cyan);
+  padding: 1rem 3.5rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  animation: btnPulse 2.5s ease-in-out infinite;
+  transition: background 0.15s ease, text-shadow 0.15s ease;
+}
+
+.intro-btn:hover {
+  background: var(--cyan-10);
+  text-shadow: 0 0 20px var(--cyan);
+}
+
+.intro-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
+}
+
+.intro-btn .bracket {
+  opacity: 0.4;
+  margin: 0 0.15em;
+}
+
+/* Sweep shine on hover */
+.intro-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--cyan-10),
+    transparent
+  );
+  transition: left 0.4s ease;
+}
+
+.intro-btn:hover::after {
+  left: 100%;
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 0 15px var(--cyan-20), inset 0 0 15px rgba(0, 229, 255, 0.03); }
+  50%      { box-shadow: 0 0 35px var(--cyan-50), inset 0 0 30px var(--cyan-10); }
+}
+
+.intro-hint {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: hintPulse 2s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.75; }
+}
+
+/* ── Title Reveal ── */
+
+.intro-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0 1rem;
+  z-index: 2;
+  animation: revealIn 0.6s ease forwards;
+}
+
+@keyframes revealIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 6vw, 4.5rem);
+  font-weight: 700;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  position: relative;
+  line-height: 1.1;
+  text-shadow: 0 0 40px var(--cyan-20);
+  margin: 0;
+}
+
+/* Chromatic aberration */
+.intro-title::before,
+.intro-title::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.intro-title::before {
+  color: var(--cyan);
+  opacity: 0.6;
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  animation: glitchTop 0.25s ease-in-out infinite alternate;
+}
+
+.intro-title::after {
+  color: var(--magenta);
+  opacity: 0.6;
+  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  animation: glitchBot 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes glitchTop {
+  0%   { transform: translate(0); }
+  25%  { transform: translate(2px, -1px); }
+  50%  { transform: translate(-1px, 1px); }
+  75%  { transform: translate(1px, 1px); }
+  100% { transform: translate(-2px, -1px); }
+}
+
+@keyframes glitchBot {
+  0%   { transform: translate(0); }
+  25%  { transform: translate(-2px, 1px); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, -1px); }
+  100% { transform: translate(2px, 1px); }
+}
+
+.intro-sub {
+  font-family: var(--font-mono);
+  font-size: clamp(0.65rem, 1.8vw, 0.95rem);
+  color: var(--text-secondary);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  margin: 0;
+  animation: subIn 1.2s ease forwards;
+}
+
+@keyframes subIn {
+  from { opacity: 0; transform: translateY(8px); letter-spacing: 0.5em; }
+  to   { opacity: 1; transform: translateY(0); letter-spacing: 0.35em; }
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .intro-btn {
+    font-size: 1.3rem;
+    padding: 0.8rem 2.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  .intro-terminal {
+    font-size: 0.75rem;
+    padding: 1rem 1.25rem;
+    max-width: 340px;
+  }
+}
