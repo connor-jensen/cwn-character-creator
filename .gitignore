@@ -1,8 +1,2 @@
 node_modules/
 .DS_Store
-
-# Override global gitignore to share hooks and settings across worktrees
-!.claude/
-.claude/*
-!.claude/settings.json
-!.claude/hooks/
