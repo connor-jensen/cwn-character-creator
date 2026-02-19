@@ -67,6 +67,39 @@ body {
   position: relative;
 }
 
+/* Outrun grid */
+body::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  width: 250vw;
+  height: 65vh;
+  transform: translateX(-50%) perspective(350px) rotateX(68deg);
+  transform-origin: center top;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 79px,
+      rgba(0, 229, 255, 0.07) 79px,
+      rgba(0, 229, 255, 0.07) 80px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255, 42, 109, 0.09) 39px,
+      rgba(255, 42, 109, 0.09) 40px
+    );
+  background-size: 80px 40px;
+  animation: gridScroll 2s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 5%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.3) 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 5%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.3) 80%, transparent 100%);
+}
+
 /* Scanline overlay */
 body::after {
   content: '';
@@ -85,6 +118,8 @@ body::after {
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 /* Scrollbar */
@@ -165,4 +200,9 @@ ul {
 @keyframes glowPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+@keyframes gridScroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 40px; }
 }
