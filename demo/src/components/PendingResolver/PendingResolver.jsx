@@ -4,6 +4,7 @@ import {
   offerFoci,
   cyberwarePackages,
   DRONE_PILOT_OPTIONS,
+  SPECIALTY_ITEMS,
 } from "../../../../cwn-engine.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
 import { getSpecialtyStatPills } from "../GearSelection/GearSelection.helpers.js";
