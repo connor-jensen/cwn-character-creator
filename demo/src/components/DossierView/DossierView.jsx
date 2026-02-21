@@ -25,7 +25,7 @@ export default function DossierView() {
           <span className="btn-prompt">&gt;_</span> Back to Roster
         </button>
       </div>
-      <CharacterDossier char={record.character} fromRoster />
+      <CharacterDossier char={record.character} />
     </>
   );
 }

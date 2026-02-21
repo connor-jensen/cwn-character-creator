@@ -22,6 +22,7 @@ import {
 import { STEPS } from "../../constants.js";
 import { deepClone } from "../../helpers/deep-clone.js";
 import { getAvailableSkills } from "../../helpers/get-available-skills.js";
+import { saveCharacter } from "../../helpers/roster-storage.js";
 
 export default function useCharacterCreation({ step = 0, navigateToStep }) {
   const [char, setChar] = useState(createCharacter);
@@ -214,6 +215,7 @@ export default function useCharacterCreation({ step = 0, navigateToStep }) {
   const handleFinish = () => {
     const next = deepClone(char);
     calculateDerivedStats(next);
+    saveCharacter(next);
     setChar(next);
   };
 

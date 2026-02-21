@@ -7,22 +7,14 @@ import {
 } from "../../../../cwn-engine.js";
 import { ALL_SKILLS, ATTR_NAMES } from "../../constants.js";
 import { normalizeWeapon, fileHash, attrPercent, computeDefenses, computeSystemStrain } from "./CharacterDossier.helpers.js";
-import { saveCharacter } from "../../helpers/roster-storage.js";
 import SectionHeader from "./SectionHeader.jsx";
 import DossierContact from "./DossierContact.jsx";
 import GearBlock from "./GearBlock.jsx";
 import "./CharacterDossier.css";
 
-export default function CharacterDossier({ char, fromRoster }) {
+export default function CharacterDossier({ char }) {
   const [loadedPrograms, setLoadedPrograms] = useState(() => new Set());
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
-
-  const handleSaveToRoster = useCallback(() => {
-    saveCharacter(char);
-    setSaveStatus("saved");
-    setTimeout(() => setSaveStatus(null), 2000);
-  }, [char]);
   const bgObj = char.background && allBackgrounds.find((b) => b.name === char.background);
   const edgeObjs = char.edges.map((name) => allEdges.find((e) => e.name === name)).filter(Boolean);
 
@@ -614,15 +606,6 @@ export default function CharacterDossier({ char, fromRoster }) {
         <button className="btn-action" onClick={handleDownload}>
           <span className="btn-prompt">&gt;_</span> Download JSON
         </button>
-        {!fromRoster && (
-          <button
-            className={`btn-action${saveStatus === "saved" ? " btn-action-success" : ""}`}
-            onClick={handleSaveToRoster}
-          >
-            <span className="btn-prompt">&gt;_</span>
-            {saveStatus === "saved" ? "Saved!" : "Save to Roster"}
-          </button>
-        )}
       </div>
     </div>
   );
